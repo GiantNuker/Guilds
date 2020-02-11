@@ -1,0 +1,39 @@
+{
+  "schemaVersion": 1,
+  "id": "nylium-template",
+  "version": "${version}",
+
+  "name": "Nylium Template",
+  "description": "Nylium Template mod",
+  "authors": [
+    {
+      "name": "NyliumMC",
+      "contact": {
+        "sources": "https://github.com/NyliumMC",
+      }
+    }
+  ],
+  "contact": {
+    "homepage": "https://fabricmc.net/",
+    "sources": "https://github.com/FabricMC/fabric-example-mod"
+  },
+
+  "license": "MIT",
+  "icon": "assets/nylium-template/icon.png",
+
+  "environment": "*",
+  "entrypoints": {
+    "main": [
+      "io.github.nyliummc.templatemod.TemplateMod"
+    ]
+  },
+  "mixins": [
+    "mixins.template.json"
+  ],
+
+  "depends": {
+    "fabricloader": ">=0.7.2",
+    "fabric": "*",
+    "minecraft": "1.15.x"
+  },
+}
