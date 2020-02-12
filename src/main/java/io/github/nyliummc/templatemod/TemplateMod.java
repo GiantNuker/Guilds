@@ -30,7 +30,6 @@ import net.fabricmc.api.ModInitializer;
 public class TemplateMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
-		// TODO: Please overwrite your default values from the template.
-		System.out.println("Hello world!");
+
 	}
 }

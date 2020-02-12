@@ -9,13 +9,14 @@
     {
       "name": "NyliumMC",
       "contact": {
+        "homepage": "nyliummc.github.io",
         "sources": "https://github.com/NyliumMC"
       }
     }
   ],
   "contact": {
-    "homepage": "https://fabricmc.net/",
-    "sources": "https://github.com/FabricMC/fabric-example-mod"
+    "homepage": "nyliummc.github.io",
+    "sources": "https://github.com/NyliumMC/<MOD>"
   },
 
   "license": "MIT",

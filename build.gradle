@@ -24,7 +24,7 @@ repositories {
 
 logger.lifecycle("""
 	=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	Building NyliumMC Template mod  
+	NyliumMC Template mod  
 
 	Version: ${project.mod_version}
 	Minecraft Version: ${project.minecraft_version}
