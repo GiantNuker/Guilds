@@ -1,35 +1,38 @@
 {
   "schemaVersion": 1,
-  "id": "nylium-template",
+  "id": "${mod_id}",
   "version": "${version}",
 
-  "name": "Nylium Template",
-  "description": "Nylium Template mod",
+  "name": "${mod_name}",
+  "description": "Template mod",
   "authors": [
     {
-      "name": "NyliumMC",
+      "name": "Indigo Amann",
       "contact": {
-        "homepage": "nyliummc.github.io",
-        "sources": "https://github.com/NyliumMC"
+        "homepage": "https://giantnuker.github.io",
+        "sources": "https://github.com/GiantNuker",
+        "email": "indigoa.coding@gmail.com"
       }
     }
   ],
   "contact": {
-    "homepage": "nyliummc.github.io",
-    "sources": "https://github.com/NyliumMC/<MOD>"
+    "homepage": "https://giantnuker.github.io",
+    "sources": "https://github.com/GiantNuker/<MOD>",
+    "issues": "https://github.com/GiantNuker/<MOD>/issues",
+    "email": "indigoa.coding@gmail.com"
   },
 
-  "license": "MIT",
-  "icon": "assets/nylium-template/icon.png",
+  "license": "Apache_2.0",
+  "icon": "assets/${mod_id}/icon.png",
 
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.nyliummc.templatemod.TemplateMod"
+      "io.github.giantnuker.template.TemplateMod"
     ]
   },
   "mixins": [
-    "mixins.template.json"
+    "mixins.${mod_id}.json"
   ],
 
   "depends": {

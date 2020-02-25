@@ -1,6 +1,6 @@
 {
   "required": true,
-  "package": "io.github.nyliummc.templatemod.mixin",
+  "package": "io.github.giantnuker.template.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
   ],
