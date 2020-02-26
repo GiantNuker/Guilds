@@ -3,6 +3,9 @@ package io.github.giantnuker.guilds;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
+import com.mojang.brigadier.suggestion.Suggestions;
+import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import io.github.nyliummc.commands.BetterCommandContext;
 import io.github.nyliummc.commands.CommandFeedback;
 import io.github.nyliummc.commands.ServerCommandBuilder;
@@ -20,6 +23,7 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
 
 public class Guilds implements ModInitializer {
 	private static final String[][] helpArray = new String[][] {
@@ -122,8 +126,8 @@ public class Guilds implements ModInitializer {
 
 	private static void acceptInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
-			if (GM.acceptInvite(uuid(context), StringArgumentType.getString(context, "guild"))) {
-				Guild guild = GM.guilds.get(StringArgumentType.getString(context, "guild"));
+			if (GM.acceptInvite(uuid(context), StringArgumentType.getString(context, "invite"))) {
+				Guild guild = GM.guilds.get(StringArgumentType.getString(context, "invite"));
 				context.getSource().sendFeedback(new LiteralText("You have joined the guild ").formatted(Formatting.GREEN).append(new LiteralText(guild.getName()).formatted(guild.getColor())), false);
 			} else {
 				context.getSource().sendFeedback(new LiteralText("You don't have an invite from that guild").formatted(Formatting.RED), false);
@@ -187,26 +191,35 @@ public class Guilds implements ModInitializer {
 	private static void listInvites(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
 			context.getSource().sendFeedback(new LiteralText("You have no pending invites").formatted(Formatting.YELLOW), false);
-			return;
-		}
-		for (String guild : GM.pendingInvites.get(uuid(context))) {
-			GM.sendInviteMessage(context.getSource().getPlayer(), guild);
+		} else {
+			for (String guild : GM.pendingInvites.get(uuid(context))) {
+				GM.sendInviteMessage(context.getSource().getPlayer(), guild);
+			}
 		}
 	}
 
 	private static void denyInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
-		if (GM.denyInvite(uuid(context), StringArgumentType.getString(context, "guild"))) {
-			Guild guild = GM.guilds.get(StringArgumentType.getString(context, "guild"));
+		if (GM.denyInvite(uuid(context), StringArgumentType.getString(context, "invite"))) {
+			Guild guild = GM.guilds.get(StringArgumentType.getString(context, "invite"));
 			context.getSource().sendFeedback(new LiteralText("You have denied the invite to ").formatted(Formatting.GREEN).append(new LiteralText(guild.getName()).formatted(guild.getColor())), false);
 		} else {
 			context.getSource().sendFeedback(new LiteralText("You don't have an invite from that guild").formatted(Formatting.RED), false);
 		}
 	}
+	private static final SuggestionProvider<ServerCommandSource> INVITES_PROVIDER = (context, builder) -> {
+		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
+			return null;
+		} else {
+			for (String guild : GM.pendingInvites.get(uuid(context))) {
+				builder.suggest(guild);
+			}
+			return builder.buildFuture();
+		}
+	};
 
 	@Override
 	public void onInitialize() {
 		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
-						.defineArgument("guild", StringArgumentType.word()).definitionDone()
 						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
 						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
@@ -227,9 +240,11 @@ public class Guilds implements ModInitializer {
 						.root()
 						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
 						.literal("invites").executes(Guilds::listInvites).root()
-						.literal("accept_invite").predefinedArgument("guild").executes(Guilds::acceptInvite).root()
-						.literal("deny_invite").predefinedArgument("guild").executes(Guilds::denyInvite).root()
+						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
+						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
+						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
 						.literal("remove").predefinedArgument("player").root()
+						.defineArgument("guild", StringArgumentType.word()).definitionDone()
 						.literal("ignore").predefinedArgument("guild").root()
 						.literal("request").predefinedArgument("guild").root()
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
