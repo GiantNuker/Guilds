@@ -34,10 +34,10 @@ public class GuildManager {
 	}
 	public void transferMembers(String from, String to) {
 		Map<UUID, String> ngm = new HashMap<>(guildMembers);
-		guildMembers.forEach((id, guild) -> { if (guild.equals(from)) {if (to.equals(null)) ngm.remove(id); else ngm.put(id, to); } });
+		guildMembers.forEach((id, guild) -> { if (guild.equals(from)) {if (to == null) ngm.remove(id); else ngm.put(id, to); } });
 		guildMembers = ngm;
 
-		pendingInvites.forEach((id, list) -> { list.forEach(guild -> { if (guild.equals(from)) {list.remove(id); if (!to.equals(null)) { list.add(to); }}});});
+		pendingInvites.forEach((id, list) -> { list.forEach(guild -> { if (guild.equals(from)) {list.remove(id); if (to != null) { list.add(to); }}});});
 	}
 	public boolean guildExists(String name) {
 		return guilds.containsKey(name);
@@ -71,7 +71,17 @@ public class GuildManager {
 		}
 		return false;
 	}
+	public boolean denyInvite(UUID player, String guild) {
+		if (pendingInvites.get(player) != null) {
+			List<String> invites = pendingInvites.get(player);
+			if (invites.contains(guild)) {
+				invites.remove(guild);
+				return true;
+			}
+		}
+		return false;
+	}
 	public void sendInviteMessage(ServerPlayerEntity player, String guild) {
-		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept " + guild)).setColor(Formatting.GREEN))), MessageType.SYSTEM);
+		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.DARK_RED))), MessageType.SYSTEM);
 	}
 }

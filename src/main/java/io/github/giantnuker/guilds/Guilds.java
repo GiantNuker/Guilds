@@ -30,7 +30,9 @@ public class Guilds implements ModInitializer {
 					{"visibility", "Change your guild's visibility"},
 					{"ranks", "Change ranks in your guild"},
 					{"invite", "player", "Invite a player to your guild"},
-					{"accept", "guild", "Accept an invite to a guild"},
+					{"invites", "Lists all the guilds you've been invited to"},
+					{"deny_invite", "Deny a guild invite"},
+					{"accept_invite", "guild", "Accept an invite to a guild"},
 					{"remove", "player", "Remove a player from your guild"},
 					{"ignore", "guild", "Ignore a request to join a guild"},
 					{"request", "guild", "Request that a player joins your guild"},
@@ -134,9 +136,13 @@ public class Guilds implements ModInitializer {
 	private static void invite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			UUID player = EntityArgumentType.getPlayer(context, "player").getGameProfile().getId();
-			GM.invite(player, GM.getGuild(uuid(context)).getName());
-			GM.sendInviteMessage(EntityArgumentType.getPlayer(context, "player"), GM.getGuild(uuid(context)).getName());
-			context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(Team.modifyText(EntityArgumentType.getPlayer(context, "player").getScoreboardTeam(), EntityArgumentType.getPlayer(context, "player").getName())).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+			if (player == uuid(context)) {
+				context.getSource().sendFeedback(new LiteralText("You can't invite yourself to your own guild!").formatted(Formatting.RED), false);
+			} else {
+				GM.invite(player, GM.getGuild(uuid(context)).getName());
+				GM.sendInviteMessage(EntityArgumentType.getPlayer(context, "player"), GM.getGuild(uuid(context)).getName());
+				context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(Team.modifyText(EntityArgumentType.getPlayer(context, "player").getScoreboardTeam(), EntityArgumentType.getPlayer(context, "player").getName())).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+			}
 		}
 	}
 
@@ -149,7 +155,7 @@ public class Guilds implements ModInitializer {
 			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChatPrefix)).append(player).append(CONFIG.guildChatSuffix).append(StringArgumentType.getString(context, "message"));
 			context.getSource().getMinecraftServer().sendMessage(message);
 			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
-				if (GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
+				if (GM.getGuild(oplayer.getGameProfile().getId()) != null && GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
 					oplayer.sendMessage(message);
 				}
 			}
@@ -178,6 +184,25 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
+	private static void listInvites(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
+			context.getSource().sendFeedback(new LiteralText("You have no pending invites").formatted(Formatting.YELLOW), false);
+			return;
+		}
+		for (String guild : GM.pendingInvites.get(uuid(context))) {
+			GM.sendInviteMessage(context.getSource().getPlayer(), guild);
+		}
+	}
+
+	private static void denyInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.denyInvite(uuid(context), StringArgumentType.getString(context, "guild"))) {
+			Guild guild = GM.guilds.get(StringArgumentType.getString(context, "guild"));
+			context.getSource().sendFeedback(new LiteralText("You have denied the invite to ").formatted(Formatting.GREEN).append(new LiteralText(guild.getName()).formatted(guild.getColor())), false);
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You don't have an invite from that guild").formatted(Formatting.RED), false);
+		}
+	}
+
 	@Override
 	public void onInitialize() {
 		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
@@ -201,7 +226,9 @@ public class Guilds implements ModInitializer {
 						.literal("help").executes(Guilds::rankHelp).up()
 						.root()
 						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
-						.literal("accept").predefinedArgument("guild").executes(Guilds::acceptInvite).root()
+						.literal("invites").executes(Guilds::listInvites).root()
+						.literal("accept_invite").predefinedArgument("guild").executes(Guilds::acceptInvite).root()
+						.literal("deny_invite").predefinedArgument("guild").executes(Guilds::denyInvite).root()
 						.literal("remove").predefinedArgument("player").root()
 						.literal("ignore").predefinedArgument("guild").root()
 						.literal("request").predefinedArgument("guild").root()
