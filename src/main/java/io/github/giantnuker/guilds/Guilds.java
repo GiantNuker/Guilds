@@ -4,8 +4,6 @@ import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import com.mojang.brigadier.suggestion.Suggestions;
-import com.mojang.brigadier.suggestion.SuggestionsBuilder;
 import io.github.nyliummc.commands.BetterCommandContext;
 import io.github.nyliummc.commands.CommandFeedback;
 import io.github.nyliummc.commands.ServerCommandBuilder;
@@ -13,6 +11,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
 import net.minecraft.command.arguments.ColorArgumentType;
 import net.minecraft.command.arguments.EntityArgumentType;
+import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,7 +22,6 @@ import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.UUID;
-import java.util.concurrent.CompletableFuture;
 
 public class Guilds implements ModInitializer {
 	private static final String[][] helpArray = new String[][] {
@@ -33,6 +31,7 @@ public class Guilds implements ModInitializer {
 					{"delete", "Delete your guild"},
 					{"visibility", "Change your guild's visibility"},
 					{"ranks", "Change ranks in your guild"},
+					{"promote", "Make someone else the guild leader"},
 					{"invite", "player", "Invite a player to your guild"},
 					{"invites", "Lists all the guilds you've been invited to"},
 					{"deny_invite", "guild", "Deny a guild invite"},
@@ -53,6 +52,16 @@ public class Guilds implements ModInitializer {
 	};
 	public static Config CONFIG = new Config();
 	public static GuildManager GM = new GuildManager();
+	private static final SuggestionProvider<ServerCommandSource> INVITES_PROVIDER = (context, builder) -> {
+		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
+			return null;
+		} else {
+			for (String guild : GM.pendingInvites.get(uuid(context))) {
+				builder.suggest(guild);
+			}
+			return builder.buildFuture();
+		}
+	};
 
 	private static void delete(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
@@ -207,16 +216,32 @@ public class Guilds implements ModInitializer {
 			context.getSource().sendFeedback(new LiteralText("You don't have an invite from that guild").formatted(Formatting.RED), false);
 		}
 	}
-	private static final SuggestionProvider<ServerCommandSource> INVITES_PROVIDER = (context, builder) -> {
-		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
-			return null;
-		} else {
-			for (String guild : GM.pendingInvites.get(uuid(context))) {
-				builder.suggest(guild);
-			}
-			return builder.buildFuture();
+
+	private static void promote(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			PlayerEntity player = EntityArgumentType.getPlayer(context, "player");
+			GM.getGuild(uuid(context)).setOwner(player.getGameProfile().getId());
+			player.sendMessage(new LiteralText("You have been promoted to leader of your guild").formatted(Formatting.GREEN));
+			context.getSource().sendFeedback(new LiteralText("You have promoted ").formatted(Formatting.GREEN).append(Team.modifyText(player.getScoreboardTeam(), player.getName())).append(new LiteralText(" to guild leader").formatted(Formatting.GREEN)), false);
 		}
-	};
+	}
+
+	private static void leave(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirm) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) != null) {
+			if (!doOwnerCheck(context)) {
+				if (confirm) {
+					GM.leaveGuild(uuid(context));
+					context.getSource().sendFeedback(new LiteralText("You have left your guild").formatted(Formatting.GREEN), false);
+				} else {
+					context.getSource().sendFeedback(new LiteralText("Are you sure you want to leave your guild? ").formatted(Formatting.YELLOW).append(new LiteralText("").formatted(Formatting.BOLD).append(new LiteralText("[YES]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild leave confirmed")).setColor(Formatting.DARK_RED)))), false);
+				}
+			} else {
+				context.getSource().sendFeedback(new LiteralText("As the guild leader, you cannot leave your guild. Promote someone else or delete the guild to leave").formatted(Formatting.RED), false);
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
+		}
+	}
 
 	@Override
 	public void onInitialize() {
@@ -240,6 +265,7 @@ public class Guilds implements ModInitializer {
 						.literal("help").executes(Guilds::rankHelp).up()
 						.root()
 						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
+						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
 						.literal("invites").executes(Guilds::listInvites).root()
 						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
 						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
@@ -252,18 +278,5 @@ public class Guilds implements ModInitializer {
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
-	}
-
-	private static void leave(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirm) throws CommandSyntaxException { // TODO block owner leaving and promotions
-		if (GM.getGuild(uuid(context)) != null) {
-			if (confirm) {
-				GM.leaveGuild(uuid(context));
-				context.getSource().sendFeedback(new LiteralText("You have left your guild").formatted(Formatting.GREEN), false);
-			} else {
-				context.getSource().sendFeedback(new LiteralText("Are you sure you want to leave your guild? ").formatted(Formatting.YELLOW).append(new LiteralText("").formatted(Formatting.BOLD).append(new LiteralText("[YES]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild leave confirmed")).setColor(Formatting.DARK_RED)))), false);
-			}
-		} else {
-			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
-		}
 	}
 }
