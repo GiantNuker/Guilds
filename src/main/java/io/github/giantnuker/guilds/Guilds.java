@@ -21,7 +21,7 @@ public class Guilds implements ModInitializer {
 	private static final String[][] helpArray = new String[][] {
 					{"create", "guild", "color", "Create a new guild"},
 					{"rename", "name", "Rename your guild"},
-					{"color", "Change your guild's color"},
+					{"recolor", "Change your guild's color"},
 					{"delete", "Delete your guild"},
 					{"visibility", "Change your guild's visibility"},
 					{"ranks", "Change ranks in your guild"},
@@ -119,7 +119,7 @@ public class Guilds implements ModInitializer {
 						.defineArgument("guild", StringArgumentType.word()).definitionDone()
 						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
-						.literal("color").argument("color", ColorArgumentType.color()).root()
+						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
 						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
 						.literal("visibility")
 						.literal("open").up()
@@ -142,6 +142,14 @@ public class Guilds implements ModInitializer {
 						.literal("chat").argument("message", StringArgumentType.greedyString()).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void recolor(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			Formatting color = ColorArgumentType.getColor(context, "color");
+			GM.getGuild(uuid(context)).setColor(color);
+			context.getSource().sendFeedback(new LiteralText("Your guild's color was changed to ").formatted(Formatting.GREEN).append(new LiteralText(color.getName()).formatted(color)), false);
+		}
 	}
 
 	private static void rename(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
