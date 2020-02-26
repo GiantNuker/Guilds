@@ -135,6 +135,7 @@ public class Guilds implements ModInitializer {
 		if (doOwnerCheck(context)) {
 			UUID player = EntityArgumentType.getPlayer(context, "player").getGameProfile().getId();
 			GM.invite(player, GM.getGuild(uuid(context)).getName());
+			GM.sendInviteMessage(EntityArgumentType.getPlayer(context, "player"), GM.getGuild(uuid(context)).getName());
 			context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(Team.modifyText(EntityArgumentType.getPlayer(context, "player").getScoreboardTeam(), EntityArgumentType.getPlayer(context, "player").getName())).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
 		}
 	}

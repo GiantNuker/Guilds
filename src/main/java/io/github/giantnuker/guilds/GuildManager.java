@@ -1,5 +1,13 @@
 package io.github.giantnuker.guilds;
 
+import net.minecraft.entity.player.PlayerEntity;
+import net.minecraft.network.MessageType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.ClickEvent;
+import net.minecraft.text.LiteralText;
+import net.minecraft.text.Style;
+import net.minecraft.util.Formatting;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -62,5 +70,8 @@ public class GuildManager {
 			}
 		}
 		return false;
+	}
+	public void sendInviteMessage(ServerPlayerEntity player, String guild) {
+		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept " + guild)).setColor(Formatting.GREEN))), MessageType.SYSTEM);
 	}
 }
