@@ -29,7 +29,7 @@ public class Guilds implements ModInitializer {
 						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").predefinedArgument("guild").root()
 						.literal("color").argument("color", ColorArgumentType.color()).root()
-						.literal("delete").root()
+						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
 						.literal("visibility")
 							.literal("open").up()
 							.literal("ask").up()
@@ -37,9 +37,8 @@ public class Guilds implements ModInitializer {
 						.root()
 						.defineArgument("player", StringArgumentType.string()).definitionDone()
 						.literal("ranks").executes(Guilds::rankHelp)
-							.literal("create").argument("rank", StringArgumentType.word()).argument("priority", IntegerArgumentType.integer(1, 10)).up("ranks")
+							.literal("create").argument("rank", StringArgumentType.word()).up("ranks")
 							.defineArgument("rank", StringArgumentType.word()).definitionDone()
-							.literal("prioritize").predefinedArgument("rank").argument("priority", IntegerArgumentType.integer(1, 10)).up("ranks")
 							.literal("remove").predefinedArgument("rank").up("ranks")
 							.literal("set").predefinedArgument("player").predefinedArgument("rank").up("ranks")
 							.literal("color").predefinedArgument("rank").argument("color", ColorArgumentType.color()).up("ranks")
@@ -54,24 +53,40 @@ public class Guilds implements ModInitializer {
 						.build()));
 	}
 
+	private static void delete(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) != null) {
+			if (GM.getGuild(uuid(context)).getOwner().equals(uuid(context))) {
+				if (confirmed) {
+					GM.removeGuild(GM.getGuild(uuid(context)).getName());
+					context.getSource().sendFeedback(new LiteralText("Your guild was removed").formatted(Formatting.GREEN), false);
+				} else {
+					context.getSource().sendFeedback(new LiteralText("Do you really want to delete your guild? ").formatted(Formatting.YELLOW).append(new LiteralText("").formatted(Formatting.BOLD).append(new LiteralText("[YES]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild delete confirmed")).setColor(Formatting.DARK_RED)))), false);
+				}
+			} else {
+				context.getSource().sendFeedback(new LiteralText("You are not the owner of your guild").formatted(Formatting.RED), false);
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
+		}
+	}
+
 	private static UUID uuid(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
 		return context.getSource().getPlayer().getGameProfile().getId();
 	}
 
 	private static void create(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
-		if (GM.getGuild(uuid(context)) != null) {
-			context.getSource().sendFeedback(new LiteralText("You are already in a guild. You must leave it first").formatted(Formatting.RED), false);
-		} else {
+		if (GM.getGuild(uuid(context)) == null) {
 			String name = StringArgumentType.getString(context, "name");
-			if (GM.guildExists(name)) {
-				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
-			} else {
+			if (!GM.guildExists(name)) {
 				Formatting color = ColorArgumentType.getColor(context, "color");
-				Guild g = new Guild(name, color);
+				Guild g = new Guild(name, color, uuid(context));
 				GM.addGuild(g);
-				GM.joinGuild(uuid(context), name);
 				context.getSource().sendFeedback(new LiteralText(String.format("Created the guild %s", name)).formatted(Formatting.GREEN), false);
+			} else {
+				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
 			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are already in a guild. You must leave it first").formatted(Formatting.RED), false);
 		}
 	}
 

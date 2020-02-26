@@ -9,9 +9,7 @@ import java.util.UUID;
 public class Guild {
 	public class Rank {
 		protected Formatting color;
-		protected int priority;
-		public Rank(int priority, Formatting color) {
-			this.priority = priority;
+		public Rank(Formatting color) {
 			this.color = color;
 		}
 		public Formatting getColor() {
@@ -20,20 +18,16 @@ public class Guild {
 		public void setColor(Formatting color) {
 			this.color = color;
 		}
-		public int getPriority() {
-			return priority;
-		}
-		public void setPriority(int priority) {
-			this.priority = priority;
-		}
 	}
-	protected Formatting color = Formatting.RESET;
+	protected Formatting color;
 	protected String name;
+	protected UUID owner;
 	protected Map<String, Rank> ranks = new HashMap<>();
 	protected Map<UUID, Rank> members = new HashMap<>();
-	public Guild(String name, Formatting color) {
+	public Guild(String name, Formatting color, UUID owner) {
 		this.name = name;
 		this.color = color;
+		this.owner = owner;
 	}
 	public String getName() {
 		return name;
@@ -57,7 +51,9 @@ public class Guild {
 		members.put(player, getRank(rank));
 	}
 	public void join(UUID player) {
-		members.put(player, null);
+		if (!members.containsKey(player)) {
+			members.put(player, null);
+		}
 	}
 	public void leave(UUID player) {
 		members.remove(player);
@@ -67,5 +63,11 @@ public class Guild {
 	}
 	public Formatting getColor() {
 		return color;
+	}
+	public void setOwner(UUID owner) {
+		this.owner = owner;
+	}
+	public UUID getOwner() {
+		return owner;
 	}
 }

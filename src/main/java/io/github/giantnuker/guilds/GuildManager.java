@@ -9,6 +9,7 @@ public class GuildManager {
 	protected Map<UUID, String> guildMembers = new HashMap<>();
 	public void addGuild(Guild guild) {
 		guilds.put(guild.getName(), guild);
+		guildMembers.put(guild.getOwner(), guild.getName());
 	}
 	public void removeGuild(String name) {
 		guilds.remove(name);
