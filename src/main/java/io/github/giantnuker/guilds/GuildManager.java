@@ -13,8 +13,17 @@ public class GuildManager {
 	}
 	public void removeGuild(String name) {
 		guilds.remove(name);
+		transferMembers(name, null);
+	}
+	public void renameGuild(String name, String to) {
+		guilds.get(name).setName(to);
+		guilds.put(to, guilds.get(name));
+		guilds.remove(name);
+		transferMembers(name, to);
+	}
+	public void transferMembers(String from, String to) {
 		Map<UUID, String> ngm = new HashMap<>(guildMembers);
-		guildMembers.forEach((id, guild) -> { if (name.equals(guild)) ngm.remove(id); });
+		guildMembers.forEach((id, guild) -> { if (guild.equals(from)) {if (to.equals(null)) ngm.remove(id); else ngm.put(id, to); } });
 		guildMembers = ngm;
 	}
 	public boolean guildExists(String name) {
