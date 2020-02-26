@@ -9,6 +9,7 @@ import io.github.nyliummc.commands.ServerCommandBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
 import net.minecraft.command.arguments.ColorArgumentType;
+import net.minecraft.command.arguments.EntityArgumentType;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -29,6 +30,7 @@ public class Guilds implements ModInitializer {
 					{"visibility", "Change your guild's visibility"},
 					{"ranks", "Change ranks in your guild"},
 					{"invite", "player", "Invite a player to your guild"},
+					{"accept", "guild", "Accept an invite to a guild"},
 					{"remove", "player", "Remove a player from your guild"},
 					{"ignore", "guild", "Ignore a request to join a guild"},
 					{"request", "guild", "Request that a player joins your guild"},
@@ -116,35 +118,25 @@ public class Guilds implements ModInitializer {
 		context.getSource().sendFeedback(new LiteralText("------------------------------------").formatted(Formatting.DARK_GREEN), false);
 	}
 
-	@Override
-	public void onInitialize() {
-		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
-						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
-						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
-						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
-						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
-						.literal("visibility")
-						.literal("open").up()
-						.literal("ask").up()
-						.literal("close").up()
-						.root()
-						.defineArgument("player", StringArgumentType.string()).definitionDone()
-						.literal("ranks").executes(Guilds::rankHelp)
-						.literal("create").argument("rank", StringArgumentType.word()).up("ranks")
-						.defineArgument("rank", StringArgumentType.word()).definitionDone()
-						.literal("remove").predefinedArgument("rank").up("ranks")
-						.literal("set").predefinedArgument("player").predefinedArgument("rank").up("ranks")
-						.literal("color").predefinedArgument("rank").argument("color", ColorArgumentType.color()).up("ranks")
-						.literal("help").executes(Guilds::rankHelp).up()
-						.root()
-						.literal("invite").predefinedArgument("player").root()
-						.literal("remove").predefinedArgument("player").root()
-						.literal("ignore").predefinedArgument("guild").root()
-						.literal("request").predefinedArgument("guild").root()
-						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
-						.literal("help").executes(Guilds::help).root()
-						.build()));
+	private static void acceptInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) == null) {
+			if (GM.acceptInvite(uuid(context), StringArgumentType.getString(context, "guild"))) {
+				Guild guild = GM.guilds.get(StringArgumentType.getString(context, "guild"));
+				context.getSource().sendFeedback(new LiteralText("You have joined the guild ").formatted(Formatting.GREEN).append(new LiteralText(guild.getName()).formatted(guild.getColor())), false);
+			} else {
+				context.getSource().sendFeedback(new LiteralText("You don't have an invite from that guild").formatted(Formatting.RED), false);
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are already in a guild. You must leave it first").formatted(Formatting.RED), false);
+		}
+	}
+
+	private static void invite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			UUID player = EntityArgumentType.getPlayer(context, "player").getGameProfile().getId();
+			GM.invite(player, GM.getGuild(uuid(context)).getName());
+			context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(Team.modifyText(EntityArgumentType.getPlayer(context, "player").getScoreboardTeam(), EntityArgumentType.getPlayer(context, "player").getName())).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+		}
 	}
 
 	private static void chat(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
@@ -183,5 +175,37 @@ public class Guilds implements ModInitializer {
 				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
 			}
 		}
+	}
+
+	@Override
+	public void onInitialize() {
+		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
+						.defineArgument("guild", StringArgumentType.word()).definitionDone()
+						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
+						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
+						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
+						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
+						.literal("visibility")
+						.literal("open").up()
+						.literal("ask").up()
+						.literal("close").up()
+						.root()
+						.defineArgument("player", EntityArgumentType.player()).definitionDone()
+						.literal("ranks").executes(Guilds::rankHelp)
+						.literal("create").argument("rank", StringArgumentType.word()).up("ranks")
+						.defineArgument("rank", StringArgumentType.word()).definitionDone()
+						.literal("remove").predefinedArgument("rank").up("ranks")
+						.literal("set").predefinedArgument("player").predefinedArgument("rank").up("ranks")
+						.literal("color").predefinedArgument("rank").argument("color", ColorArgumentType.color()).up("ranks")
+						.literal("help").executes(Guilds::rankHelp).up()
+						.root()
+						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
+						.literal("accept").predefinedArgument("guild").executes(Guilds::acceptInvite).root()
+						.literal("remove").predefinedArgument("player").root()
+						.literal("ignore").predefinedArgument("guild").root()
+						.literal("request").predefinedArgument("guild").root()
+						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
+						.literal("help").executes(Guilds::help).root()
+						.build()));
 	}
 }
