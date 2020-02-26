@@ -29,17 +29,18 @@ public class Guilds implements ModInitializer {
 	private static final String[][] helpArray = new String[][] {
 					{"create", "guild", "color", "Create a new guild"},
 					{"rename", "name", "Rename your guild"},
-					{"recolor", "Change your guild's color"},
+					{"recolor", "color", "Change your guild's color"},
 					{"delete", "Delete your guild"},
 					{"visibility", "Change your guild's visibility"},
 					{"ranks", "Change ranks in your guild"},
 					{"invite", "player", "Invite a player to your guild"},
 					{"invites", "Lists all the guilds you've been invited to"},
-					{"deny_invite", "Deny a guild invite"},
+					{"deny_invite", "guild", "Deny a guild invite"},
 					{"accept_invite", "guild", "Accept an invite to a guild"},
 					{"remove", "player", "Remove a player from your guild"},
 					{"ignore", "guild", "Ignore a request to join a guild"},
 					{"request", "guild", "Request that a player joins your guild"},
+					{"leave", "Leave your guild"},
 					{"chat", "Send a message in private guild chat"},
 					{"help", "Show this message"}
 	};
@@ -247,8 +248,22 @@ public class Guilds implements ModInitializer {
 						.defineArgument("guild", StringArgumentType.word()).definitionDone()
 						.literal("ignore").predefinedArgument("guild").root()
 						.literal("request").predefinedArgument("guild").root()
+						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void leave(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirm) throws CommandSyntaxException { // TODO block owner leaving and promotions
+		if (GM.getGuild(uuid(context)) != null) {
+			if (confirm) {
+				GM.leaveGuild(uuid(context));
+				context.getSource().sendFeedback(new LiteralText("You have left your guild").formatted(Formatting.GREEN), false);
+			} else {
+				context.getSource().sendFeedback(new LiteralText("Are you sure you want to leave your guild? ").formatted(Formatting.YELLOW).append(new LiteralText("").formatted(Formatting.BOLD).append(new LiteralText("[YES]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild leave confirmed")).setColor(Formatting.DARK_RED)))), false);
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
+		}
 	}
 }

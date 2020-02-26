@@ -65,6 +65,7 @@ public class GuildManager {
 			List<String> invites = pendingInvites.get(player);
 			if (invites.contains(guild)) {
 				invites.remove(guild);
+				leaveGuild(player);
 				joinGuild(player, guild);
 				return true;
 			}
