@@ -3,6 +3,8 @@ package io.github.giantnuker.guilds;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import io.github.nyliummc.commands.BetterCommandContext;
 import io.github.nyliummc.commands.CommandFeedback;
 import io.github.nyliummc.commands.ServerCommandBuilder;
@@ -15,14 +17,18 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.util.Formatting;
 
+import java.util.UUID;
+
 public class Guilds implements ModInitializer {
+	public static Config CONFIG = new Config();
 	public static GuildManager GM = new GuildManager();
 	@Override
 	public void onInitialize() {
 		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
 						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("create").predefinedArgument("guild").root()
+						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").predefinedArgument("guild").root()
+						.literal("color").argument("color", ColorArgumentType.color()).root()
 						.literal("delete").root()
 						.literal("visibility")
 							.literal("open").up()
@@ -47,9 +53,32 @@ public class Guilds implements ModInitializer {
 						.literal("help").executes(Guilds::help).root()
 						.build()));
 	}
+
+	private static UUID uuid(CommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+		return context.getSource().getPlayer().getGameProfile().getId();
+	}
+
+	private static void create(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) != null) {
+			context.getSource().sendFeedback(new LiteralText("You are already in a guild. You must leave it first").formatted(Formatting.RED), false);
+		} else {
+			String name = StringArgumentType.getString(context, "name");
+			if (GM.guildExists(name)) {
+				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
+			} else {
+				Formatting color = ColorArgumentType.getColor(context, "color");
+				Guild g = new Guild(name, color);
+				GM.addGuild(g);
+				GM.joinGuild(uuid(context), name);
+				context.getSource().sendFeedback(new LiteralText(String.format("Created the guild %s", name)).formatted(Formatting.GREEN), false);
+			}
+		}
+	}
+
 	private static final String[][] helpArray = new String[][] {
-					{ "create", "guild", "Create a new guild" },
+					{ "create", "guild", "color", "Create a new guild" },
 					{ "rename", "name", "Rename your guild" },
+					{ "color", "Change your guild's color" },
 					{ "delete", "Delete your guild" },
 					{ "visibility", "Change your guild's visibility" },
 					{ "ranks", "Change ranks in your guild" },

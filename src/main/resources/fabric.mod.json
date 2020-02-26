@@ -7,7 +7,7 @@
   "description": "Template mod",
   "authors": [
     {
-      "name": "Indigo Amann",
+      "name": "GiantNuker",
       "contact": {
         "homepage": "https://giantnuker.github.io",
         "sources": "https://github.com/GiantNuker",
@@ -28,7 +28,7 @@
   "environment": "*",
   "entrypoints": {
     "main": [
-      "io.github.giantnuker.template.TemplateMod"
+      "io.github.giantnuker.guilds.Guilds"
     ]
   },
   "mixins": [

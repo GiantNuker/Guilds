@@ -1,8 +1,9 @@
 {
   "required": true,
-  "package": "io.github.giantnuker.template.mixin",
+  "package": "io.github.giantnuker.guilds.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "PlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
