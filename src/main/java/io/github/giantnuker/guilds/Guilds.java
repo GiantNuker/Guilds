@@ -82,7 +82,7 @@ public class Guilds implements ModInitializer {
 				Formatting color = ColorArgumentType.getColor(context, "color");
 				Guild g = new Guild(name, color, uuid(context));
 				GM.addGuild(g);
-				context.getSource().sendFeedback(new LiteralText(String.format("Created the guild %s", name)).formatted(Formatting.GREEN), false);
+				context.getSource().sendFeedback(new LiteralText("Created the guild ").formatted(Formatting.GREEN).append(new LiteralText(name).formatted(color)), false);
 			} else {
 				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
 			}
