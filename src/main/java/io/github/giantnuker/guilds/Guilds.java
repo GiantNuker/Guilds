@@ -9,10 +9,13 @@ import io.github.nyliummc.commands.ServerCommandBuilder;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
 import net.minecraft.command.arguments.ColorArgumentType;
+import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
+import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
 
 import java.util.UUID;
@@ -139,9 +142,27 @@ public class Guilds implements ModInitializer {
 						.literal("remove").predefinedArgument("player").root()
 						.literal("ignore").predefinedArgument("guild").root()
 						.literal("request").predefinedArgument("guild").root()
-						.literal("chat").argument("message", StringArgumentType.greedyString()).root()
+						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void chat(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		Guild guild = GM.getGuild(uuid(context));
+		if (guild != null) {
+			Guild.Rank rank = guild.getRank(uuid(context));
+			Text rankedName = rank != null ? new LiteralText("").append(rank.getColor() != null ? new LiteralText(rank.getName()).formatted(rank.getColor()) : new LiteralText(rank.getName())).append(context.getSource().getPlayer().getName()) : context.getSource().getPlayer().getName();
+			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), rankedName);
+			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChatPrefix)).append(player).append(CONFIG.guildChatSuffix).append(StringArgumentType.getString(context, "message"));
+			context.getSource().getMinecraftServer().sendMessage(message);
+			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
+				if (GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
+					oplayer.sendMessage(message);
+				}
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
+		}
 	}
 
 	private static void recolor(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {

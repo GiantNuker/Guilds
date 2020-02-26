@@ -9,8 +9,15 @@ import java.util.UUID;
 public class Guild {
 	public class Rank {
 		protected Formatting color;
-		public Rank(Formatting color) {
+		protected String name;
+		public Rank(String name, Formatting color) {
 			this.color = color;
+		}
+		public String getName() {
+			return name;
+		}
+		public void setName(String name) {
+			this.name = name;
 		}
 		public Formatting getColor() {
 			return color;
