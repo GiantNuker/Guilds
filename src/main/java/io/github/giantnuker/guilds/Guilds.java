@@ -34,6 +34,8 @@ public class Guilds implements ModInitializer {
 					{"promote", "Make someone else the guild leader"},
 					{"invite", "player", "Invite a player to your guild"},
 					{"invites", "Lists all the guilds you've been invited to"},
+					{"members", "Lists everyone in the guild"},
+					{"kick", "player", "Kicks a player from the guild"},
 					{"deny_invite", "guild", "Deny a guild invite"},
 					{"accept_invite", "guild", "Accept an invite to a guild"},
 					{"remove", "player", "Remove a player from your guild"},
@@ -245,6 +247,7 @@ public class Guilds implements ModInitializer {
 						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
 						.literal("invites").executes(Guilds::listInvites).root()
 						.literal("members").executes(Guilds::listMembers).root()
+						.literal("kick").predefinedArgument("player").executes(Guilds::kick).root()
 						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
 						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
 						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
@@ -256,6 +259,24 @@ public class Guilds implements ModInitializer {
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void kick(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			String toKickName = StringArgumentType.getString(context, "player");
+			UUID toKickID = OfflineInfo.getUUID(context, "player");
+			if (!toKickID.equals(uuid(context))) {
+				Guild guild = GM.getGuild(uuid(context));
+				if (GM.getGuild(toKickID).equals(guild)) {
+					GM.leaveGuild(toKickID);
+					context.getSource().sendFeedback(new LiteralText("Kicked ").formatted(Formatting.GREEN).append(new LiteralText(toKickName).formatted(Formatting.GOLD)), false);
+				} else {
+					context.getSource().sendFeedback(new LiteralText("That player is not in your guild").formatted(Formatting.RED), false);
+				}
+			} else {
+				context.getSource().sendFeedback(new LiteralText("You can't kick yourself from your guild").formatted(Formatting.RED), false);
+			}
+		}
 	}
 
 	private static void listMembers(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
