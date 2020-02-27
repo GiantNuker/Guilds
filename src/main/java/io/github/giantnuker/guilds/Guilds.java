@@ -31,7 +31,6 @@ public class Guilds implements ModInitializer {
 					{"recolor", "color", "Change your guild's color"},
 					{"delete", "Delete your guild"},
 					{"visibility", "Change your guild's visibility"},
-					{"ranks", "Change ranks in your guild"},
 					{"promote", "Make someone else the guild leader"},
 					{"invite", "player", "Invite a player to your guild"},
 					{"invites", "Lists all the guilds you've been invited to"},
@@ -92,6 +91,7 @@ public class Guilds implements ModInitializer {
 				Formatting color = ColorArgumentType.getColor(context, "color");
 				Guild g = new Guild(name, color, uuid(context));
 				GM.addGuild(g);
+				GM.joinGuild(uuid(context), name);
 				context.getSource().sendFeedback(new LiteralText("Created the guild ").formatted(Formatting.GREEN).append(new LiteralText(name).formatted(color)), false);
 			} else {
 				context.getSource().sendFeedback(new LiteralText("A guild with that name already exists").formatted(Formatting.RED), false);
@@ -143,9 +143,7 @@ public class Guilds implements ModInitializer {
 	private static void chat(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		Guild guild = GM.getGuild(uuid(context));
 		if (guild != null) {
-			Guild.Rank rank = guild.getRank(uuid(context));
-			Text rankedName = rank != null ? new LiteralText("").append(rank.getColor() != null ? new LiteralText(rank.getName()).formatted(rank.getColor()) : new LiteralText(rank.getName())).append(context.getSource().getPlayer().getName()) : context.getSource().getPlayer().getName();
-			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), rankedName);
+			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), context.getSource().getPlayer().getName());
 			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChatPrefix)).append(player).append(CONFIG.guildChatSuffix).append(StringArgumentType.getString(context, "message"));
 			context.getSource().getMinecraftServer().sendMessage(message);
 			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
@@ -206,7 +204,7 @@ public class Guilds implements ModInitializer {
 				if (pe != null) {
 					pe.sendMessage(new LiteralText("You have been promoted to leader of your guild").formatted(Formatting.GREEN));
 				}
-				context.getSource().sendFeedback(new LiteralText("You have promoted ").formatted(Formatting.GREEN).append(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), player)).append(new LiteralText(" to guild leader").formatted(Formatting.GREEN)), false);
+				context.getSource().sendFeedback(new LiteralText("You have promoted ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to guild leader").formatted(Formatting.GREEN)), false);
 			} else {
 				context.getSource().sendFeedback(new LiteralText(String.format("%s is not a member of your guild", StringArgumentType.getString(context, "player"))).formatted(Formatting.RED), false);
 			}
@@ -246,6 +244,7 @@ public class Guilds implements ModInitializer {
 						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).definitionDone()
 						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
 						.literal("invites").executes(Guilds::listInvites).root()
+						.literal("members").executes(Guilds::listMembers).root()
 						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
 						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
 						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
@@ -257,5 +256,22 @@ public class Guilds implements ModInitializer {
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void listMembers(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) != null) {
+			Guild guild = GM.getGuild(uuid(context));
+			System.out.println(guild.members);
+			Text text = new LiteralText("").append(new LiteralText(String.format("Members (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
+			for (int i = 0; i < guild.members.size(); i++) {
+				text.append(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), guild.members.get(i))).formatted(Formatting.GOLD));
+				if (i < guild.members.size() - 1) {
+					text.append(new LiteralText(", "));
+				}
+			}
+			context.getSource().sendFeedback(text, false);
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
+		}
 	}
 }

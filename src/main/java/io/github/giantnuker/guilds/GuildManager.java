@@ -43,18 +43,20 @@ public class GuildManager {
 		return guilds.containsKey(name);
 	}
 	public void joinGuild(UUID player, String guild) {
+		guilds.get(guild).join(player);
 		guildMembers.put(player, guild);
 	}
 	public void leaveGuild(UUID player) {
+		if (guildMembers.get(player) != null) {
+			guilds.get(guildMembers.get(player)).leave(player);
+		}
 		guildMembers.remove(player);
 	}
 	public Guild getGuild(UUID player) {
 		return guilds.get(guildMembers.get(player));
 	}
 	public void invite(UUID player, String guild) {
-		if (pendingInvites.get(player) == null) {
-			pendingInvites.put(player, new ArrayList<>());
-		}
+		pendingInvites.computeIfAbsent(player, k -> new ArrayList<>());
 		List<String> invites = pendingInvites.get(player);
 		if (!invites.contains(guild)) {
 			invites.add(guild);
