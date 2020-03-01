@@ -48,11 +48,9 @@ public class Guilds implements ModInitializer {
 					{"invites", "Lists all the guilds you've been invited to"},
 					{"members", "Lists everyone in the guild"},
 					{"kick", "player", "Kicks a player from the guild"},
-					{"deny_invite", "guild", "Deny a guild invite"},
-					{"accept_invite", "guild", "Accept an invite to a guild"},
 					{"remove", "player", "Remove a player from your guild"},
-					{"ignore", "guild", "Ignore a request to join a guild"},
 					{"request", "guild", "Request that a player joins your guild"},
+					{"requests", "guild", "View all join requests"},
 					{"leave", "Leave your guild"},
 					{"chat", "Send a message in private guild chat"},
 					{"help", "Show this message"}
@@ -152,10 +150,14 @@ public class Guilds implements ModInitializer {
 			if (player == uuid(context)) {
 				context.getSource().sendFeedback(new LiteralText("You can't invite yourself to your own guild!").formatted(Formatting.RED), false);
 			} else {
-				GM.invite(player, GM.getGuild(uuid(context)).getName());
-				String guild = GM.getGuild(uuid(context)).getName();
-				ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.DARK_RED))));
-				context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+				if (GM.getGuild(uuid(context)).requests.contains(player)) {
+					context.getSource().sendFeedback(new LiteralText("This player has already sent a request to join your guild. Just accept that").formatted(Formatting.RED), false);
+				} else {
+					GM.invite(player, GM.getGuild(uuid(context)).getName());
+					String guild = GM.getGuild(uuid(context)).getName();
+					ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.RED))));
+					context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+				}
 			}
 		}
 	}
@@ -230,7 +232,7 @@ public class Guilds implements ModInitializer {
 
 	private static void leave(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirm) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) != null) {
-			if (!doOwnerCheck(context)) {
+			if (!GM.getGuild(uuid(context)).getOwner().equals(uuid(context))) {
 				if (confirm) {
 					GM.leaveGuild(uuid(context));
 					context.getSource().sendFeedback(new LiteralText("You have left your guild").formatted(Formatting.GREEN), false);
@@ -279,11 +281,83 @@ public class Guilds implements ModInitializer {
 						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
 						.literal("remove").predefinedArgument("player").root()
 						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("request").predefinedArgument("guild").root()
+						.literal("request").predefinedArgument("guild").executes(Guilds::request).root()
+						.literal("requests").executes(Guilds::requests).root()
+						.literal("accept_request").predefinedArgument("player").executes(Guilds::acceptRequest).root()
+						.literal("deny_request").predefinedArgument("player").executes(Guilds::denyRequest).root()
 						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
 						.literal("help").executes(Guilds::help).root()
 						.build()));
+	}
+
+	private static void denyRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			Guild g = GM.getGuild(uuid(context));
+			UUID player = OfflineInfo.getUUID(context, "player");
+			if (g.requests.contains(player)) {
+				g.requests.remove(player);
+				context.getSource().sendFeedback(new LiteralText("Request denied").formatted(Formatting.GREEN), false);
+				ASAPMessages.message(player, context, new LiteralText("Your request to join ").formatted(Formatting.RED).append(new LiteralText(g.getName()).formatted(g.getColor())).append(" was denied"));
+			} else {
+				context.getSource().sendFeedback(new LiteralText("That player has not requested to join your guild").formatted(Formatting.RED), false);
+			}
+		}
+	}
+
+	private static void acceptRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			Guild g = GM.getGuild(uuid(context));
+			UUID player = OfflineInfo.getUUID(context, "player");
+			if (g.requests.contains(player)) {
+				g.requests.remove(player);
+				GM.joinGuild(player, g.getName());
+				context.getSource().sendFeedback(new LiteralText("Request accepted").formatted(Formatting.GREEN), false);
+				ASAPMessages.message(player, context, new LiteralText("Your request to join ").formatted(Formatting.GREEN).append(new LiteralText(g.getName()).formatted(g.getColor())).append(" was accepted"));
+			} else {
+				context.getSource().sendFeedback(new LiteralText("That player has not requested to join your guild").formatted(Formatting.RED), false);
+			}
+		}
+	}
+
+	private static void requests(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			Guild guild = GM.getGuild(uuid(context));
+			Text text = new LiteralText("").append(new LiteralText(String.format("Requests (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
+			for (int i = 0; i < guild.requests.size(); i++) {
+				String n = OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), guild.requests.get(i));
+				text.append(new LiteralText(n).formatted(Formatting.GOLD));
+				text.append(new LiteralText(" [A]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + n)).setColor(Formatting.GREEN)));
+				text.append(new LiteralText(" [D]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + n)).setColor(Formatting.RED)));
+				if (i < guild.requests.size() - 1) {
+					text.append(new LiteralText(", "));
+				}
+			}
+			context.getSource().sendFeedback(text, false);
+		}
+	}
+
+	private static void request(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (GM.getGuild(uuid(context)) == null) {
+			String guild = StringArgumentType.getString(context, "guild");
+			if (GM.guildExists(guild)) {
+				Guild g = GM.guilds.get(guild);
+				if (!g.requests.contains(uuid(context))) {
+					g.requests.add(uuid(context));
+					context.getSource().sendFeedback(new LiteralText("You have requested to join ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
+					ServerPlayerEntity owner = context.getSource().getMinecraftServer().getPlayerManager().getPlayer(g.owner);
+					if (owner != null) {
+						owner.sendMessage(new LiteralText(context.getSource().getPlayer().getGameProfile().getName()).formatted(Formatting.GOLD).append(new LiteralText(" has requested to join your guild").formatted(Formatting.YELLOW)).append(new LiteralText(" [ACCEPT]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.RED))));
+					}
+				} else {
+					context.getSource().sendFeedback(new LiteralText("You have already requested to join this guild").formatted(Formatting.RED), false);
+				}
+			} else {
+				context.getSource().sendFeedback(new LiteralText("That guild does not exist").formatted(Formatting.RED), false);
+			}
+		} else {
+			context.getSource().sendFeedback(new LiteralText("You are already in a guild. You must leave it first").formatted(Formatting.RED), false);
+		}
 	}
 
 	private static void kick(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
@@ -308,7 +382,6 @@ public class Guilds implements ModInitializer {
 	private static void listMembers(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) != null) {
 			Guild guild = GM.getGuild(uuid(context));
-			System.out.println(guild.members);
 			Text text = new LiteralText("").append(new LiteralText(String.format("Members (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
 			for (int i = 0; i < guild.members.size(); i++) {
 				text.append(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), guild.members.get(i))).formatted(Formatting.GOLD));

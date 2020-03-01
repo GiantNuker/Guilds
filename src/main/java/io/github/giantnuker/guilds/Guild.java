@@ -12,7 +12,8 @@ public class Guild {
 	protected Formatting color;
 	protected String name;
 	protected UUID owner;
-	protected List<UUID> members = new ArrayList<>();
+	public List<UUID> members = new ArrayList<>();
+	public List<UUID> requests = new ArrayList<>();
 	public Guild(String name, Formatting color, UUID owner) {
 		this.name = name;
 		this.color = color;

@@ -46,6 +46,7 @@ public class GuildManager {
 	public void joinGuild(UUID player, String guild) {
 		guilds.get(guild).join(player);
 		guildMembers.put(player, guild);
+		cancelRequests(player);
 	}
 	public void leaveGuild(UUID player) {
 		if (guildMembers.get(player) != null) {
@@ -87,5 +88,10 @@ public class GuildManager {
 	}
 	public void sendInviteMessage(ServerPlayerEntity player, String guild) {
 		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.DARK_RED))), MessageType.SYSTEM);
+	}
+	public void cancelRequests(UUID player) {
+		for (Guild g: guilds.values()) {
+			g.requests.remove(player);
+		}
 	}
 }
