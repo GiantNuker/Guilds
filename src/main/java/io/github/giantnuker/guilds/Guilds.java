@@ -1,6 +1,5 @@
 package io.github.giantnuker.guilds;
 
-import com.google.common.reflect.TypeToken;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -11,10 +10,7 @@ import io.github.nyliummc.commands.ServerCommandBuilder;
 import io.github.voidpointerdev.minecraft.offlineinfo.OfflineInfo;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
-import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.arguments.ColorArgumentType;
-import net.minecraft.command.arguments.EntityArgumentType;
-import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -23,17 +19,7 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
-import ninja.leaping.configurate.ConfigurationNode;
-import ninja.leaping.configurate.ConfigurationOptions;
-import ninja.leaping.configurate.commented.CommentedConfigurationNode;
-import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
-import ninja.leaping.configurate.loader.ConfigurationLoader;
-import ninja.leaping.configurate.objectmapping.DefaultObjectMapperFactory;
-import ninja.leaping.configurate.objectmapping.ObjectMapperFactory;
-import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.UUID;
 
 public class Guilds implements ModInitializer {
@@ -48,7 +34,6 @@ public class Guilds implements ModInitializer {
 					{"invites", "Lists all the guilds you've been invited to"},
 					{"members", "Lists everyone in the guild"},
 					{"kick", "player", "Kicks a player from the guild"},
-					{"remove", "player", "Remove a player from your guild"},
 					{"request", "guild", "Request that a player joins your guild"},
 					{"requests", "guild", "View all join requests"},
 					{"leave", "Leave your guild"},
@@ -71,7 +56,7 @@ public class Guilds implements ModInitializer {
 	private static void delete(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			if (confirmed) {
-				for (UUID member: GM.getGuild(uuid(context)).members) {
+				for (UUID member : GM.getGuild(uuid(context)).members) {
 					if (!member.equals(uuid(context))) {
 						ASAPMessages.message(member, context, new LiteralText("Your guild was deleted by the owner").formatted(Formatting.DARK_RED));
 					}
@@ -246,50 +231,6 @@ public class Guilds implements ModInitializer {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
 		}
 	}
-	@Override
-	public void onInitialize() {
-		/*try {
-			File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), "guilds.hocon");
-			ConfigurationLoader<CommentedConfigurationNode> config = HoconConfigurationLoader.builder().setFile(configFile).build();
-			if (!configFile.exists()) {
-				configFile.createNewFile();
-			}
-			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setHeader("~~owo~~\n~~uwu~~").setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
-			CONFIG = node.getValue(TypeToken.of(Config.class), new Config());
-			config.save(node);
-		} catch (IOException | ObjectMappingException e) {
-			e.printStackTrace();
-		}*/
-		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
-						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
-						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
-						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
-						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
-						.literal("visibility")
-						.literal("open").up()
-						.literal("ask").up()
-						.literal("close").up()
-						.root()
-						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).definitionDone()
-						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
-						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
-						.literal("invites").executes(Guilds::listInvites).root()
-						.literal("members").executes(Guilds::listMembers).root()
-						.literal("kick").predefinedArgument("player").executes(Guilds::kick).root()
-						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
-						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
-						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
-						.literal("remove").predefinedArgument("player").root()
-						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("request").predefinedArgument("guild").executes(Guilds::request).root()
-						.literal("requests").executes(Guilds::requests).root()
-						.literal("accept_request").predefinedArgument("player").executes(Guilds::acceptRequest).root()
-						.literal("deny_request").predefinedArgument("player").executes(Guilds::denyRequest).root()
-						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
-						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
-						.literal("help").executes(Guilds::help).root()
-						.build()));
-	}
 
 	private static void denyRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
@@ -343,11 +284,22 @@ public class Guilds implements ModInitializer {
 			if (GM.guildExists(guild)) {
 				Guild g = GM.guilds.get(guild);
 				if (!g.requests.contains(uuid(context))) {
-					g.requests.add(uuid(context));
-					context.getSource().sendFeedback(new LiteralText("You have requested to join ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
-					ServerPlayerEntity owner = context.getSource().getMinecraftServer().getPlayerManager().getPlayer(g.owner);
-					if (owner != null) {
-						owner.sendMessage(new LiteralText(context.getSource().getPlayer().getGameProfile().getName()).formatted(Formatting.GOLD).append(new LiteralText(" has requested to join your guild").formatted(Formatting.YELLOW)).append(new LiteralText(" [ACCEPT]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.RED))));
+					switch (g.visibility) {
+					case OPEN:
+						context.getSource().sendFeedback(new LiteralText("You have joined the open guild ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
+						GM.joinGuild(uuid(context), guild);
+						break;
+					case ASK:
+						g.requests.add(uuid(context));
+						context.getSource().sendFeedback(new LiteralText("You have requested to join ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
+						ServerPlayerEntity owner = context.getSource().getMinecraftServer().getPlayerManager().getPlayer(g.owner);
+						if (owner != null) {
+							owner.sendMessage(new LiteralText(context.getSource().getPlayer().getGameProfile().getName()).formatted(Formatting.GOLD).append(new LiteralText(" has requested to join your guild").formatted(Formatting.YELLOW)).append(new LiteralText(" [ACCEPT]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.RED))));
+						}
+						break;
+					case CLOSED:
+						context.getSource().sendFeedback(new LiteralText("You cannot join the guild ").formatted(Formatting.RED).append(new LiteralText(guild).formatted(g.getColor())).append(" because it is closed"), false);
+						break;
 					}
 				} else {
 					context.getSource().sendFeedback(new LiteralText("You have already requested to join this guild").formatted(Formatting.RED), false);
@@ -393,5 +345,57 @@ public class Guilds implements ModInitializer {
 		} else {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
 		}
+	}
+
+	private static void setVisibility(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, Guild.Visibility visibility) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			GM.getGuild(uuid(context)).setVisibility(visibility, context.getSource().getMinecraftServer().getPlayerManager());
+			context.getSource().sendFeedback(new LiteralText("Your guilds visibility was changed to ").formatted(Formatting.GREEN).append(new LiteralText(visibility.name()).formatted(Formatting.GOLD)), false);
+		}
+	}
+
+	@Override
+	public void onInitialize() {
+		/*try {
+			File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), "guilds.hocon");
+			ConfigurationLoader<CommentedConfigurationNode> config = HoconConfigurationLoader.builder().setFile(configFile).build();
+			if (!configFile.exists()) {
+				configFile.createNewFile();
+			}
+			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setHeader("~~owo~~\n~~uwu~~").setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
+			CONFIG = node.getValue(TypeToken.of(Config.class), new Config());
+			config.save(node);
+		} catch (IOException | ObjectMappingException e) {
+			e.printStackTrace();
+		}*/
+		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
+						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
+						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
+						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
+						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
+						.literal("visibility")
+						.literal("open").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.OPEN)).up()
+						.literal("ask").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.ASK)).up()
+						.literal("closed").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.CLOSED)).up()
+						.root()
+						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).definitionDone()
+						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
+						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
+						.literal("invites").executes(Guilds::listInvites).root()
+						.literal("members").executes(Guilds::listMembers).root()
+						.literal("kick").predefinedArgument("player").executes(Guilds::kick).root()
+						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
+						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
+						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
+						.literal("remove").predefinedArgument("player").root()
+						.defineArgument("guild", StringArgumentType.word()).definitionDone()
+						.literal("request").predefinedArgument("guild").executes(Guilds::request).root()
+						.literal("requests").executes(Guilds::requests).root()
+						.literal("accept_request").predefinedArgument("player").executes(Guilds::acceptRequest).root()
+						.literal("deny_request").predefinedArgument("player").executes(Guilds::denyRequest).root()
+						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
+						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
+						.literal("help").executes(Guilds::help).root()
+						.build()));
 	}
 }
