@@ -49,6 +49,7 @@ public class Guilds implements ModInitializer {
 			for (String guild : GM.pendingInvites.get(uuid(context))) {
 				builder.suggest(guild);
 			}
+
 			return builder.buildFuture();
 		}
 	};
@@ -61,6 +62,7 @@ public class Guilds implements ModInitializer {
 						ASAPMessages.message(member, context, new LiteralText("Your guild was deleted by the owner").formatted(Formatting.DARK_RED));
 					}
 				}
+
 				GM.removeGuild(GM.getGuild(uuid(context)).getName());
 				context.getSource().sendFeedback(new LiteralText("Your guild was removed").formatted(Formatting.GREEN), false);
 			} else {
@@ -83,12 +85,14 @@ public class Guilds implements ModInitializer {
 		} else {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
 		}
+
 		return false;
 	}
 
 	private static void create(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
 			String name = StringArgumentType.getString(context, "name");
+
 			if (!GM.guildExists(name)) {
 				Formatting color = ColorArgumentType.getColor(context, "color");
 				Guild g = new Guild(name, color, uuid(context));
@@ -105,14 +109,18 @@ public class Guilds implements ModInitializer {
 
 	private static void help(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) {
 		context.getSource().sendFeedback(new LiteralText("---------- Guild Help ----------").formatted(Formatting.DARK_GREEN), false);
+
 		for (String[] cmd : helpArray) {
 			String command = "/guild " + cmd[0];
 			String fullcommand = command;
+
 			for (int i = 1; i < cmd.length - 1; i++) {
 				fullcommand += " <" + cmd[i] + ">";
 			}
+
 			context.getSource().sendFeedback(new LiteralText(fullcommand + " - ").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.SUGGEST_COMMAND, command)).setColor(Formatting.GRAY)).append(new LiteralText(cmd[cmd.length - 1]).formatted(Formatting.GREEN)), false);
 		}
+
 		context.getSource().sendFeedback(new LiteralText("-----------------------------").formatted(Formatting.DARK_GREEN), false);
 	}
 
@@ -132,6 +140,7 @@ public class Guilds implements ModInitializer {
 	private static void invite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			UUID player = OfflineInfo.getUUID(context, "player");
+
 			if (player == uuid(context)) {
 				context.getSource().sendFeedback(new LiteralText("You can't invite yourself to your own guild!").formatted(Formatting.RED), false);
 			} else {
@@ -149,10 +158,12 @@ public class Guilds implements ModInitializer {
 
 	private static void chat(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		Guild guild = GM.getGuild(uuid(context));
+
 		if (guild != null) {
 			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), context.getSource().getPlayer().getName());
 			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChatPrefix)).append(player).append(CONFIG.guildChatSuffix).append(StringArgumentType.getString(context, "message"));
 			context.getSource().getMinecraftServer().sendMessage(message);
+
 			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
 				if (GM.getGuild(oplayer.getGameProfile().getId()) != null && GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
 					oplayer.sendMessage(message);
@@ -174,6 +185,7 @@ public class Guilds implements ModInitializer {
 	private static void rename(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			String name = StringArgumentType.getString(context, "name");
+
 			if (!GM.guildExists(name)) {
 				GM.renameGuild(GM.getGuild(uuid(context)).getName(), name);
 				context.getSource().sendFeedback(new LiteralText(String.format("Renamed your guild to %s", name)).formatted(Formatting.GREEN), false);
@@ -205,6 +217,7 @@ public class Guilds implements ModInitializer {
 	private static void promote(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			UUID player = OfflineInfo.getUUID(context, "player");
+
 			if (GM.getGuild(player) == GM.getGuild(uuid(context))) {
 				GM.getGuild(uuid(context)).setOwner(player);
 				ASAPMessages.message(player, context, new LiteralText("You have been promoted to leader of your guild").formatted(Formatting.GREEN));
@@ -236,6 +249,7 @@ public class Guilds implements ModInitializer {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
 			UUID player = OfflineInfo.getUUID(context, "player");
+
 			if (g.requests.contains(player)) {
 				g.requests.remove(player);
 				context.getSource().sendFeedback(new LiteralText("Request denied").formatted(Formatting.GREEN), false);
@@ -250,6 +264,7 @@ public class Guilds implements ModInitializer {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
 			UUID player = OfflineInfo.getUUID(context, "player");
+
 			if (g.requests.contains(player)) {
 				g.requests.remove(player);
 				GM.joinGuild(player, g.getName());
@@ -265,15 +280,18 @@ public class Guilds implements ModInitializer {
 		if (doOwnerCheck(context)) {
 			Guild guild = GM.getGuild(uuid(context));
 			Text text = new LiteralText("").append(new LiteralText(String.format("Requests (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
+
 			for (int i = 0; i < guild.requests.size(); i++) {
 				String n = OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), guild.requests.get(i));
 				text.append(new LiteralText(n).formatted(Formatting.GOLD));
 				text.append(new LiteralText(" [A]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + n)).setColor(Formatting.GREEN)));
 				text.append(new LiteralText(" [D]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + n)).setColor(Formatting.RED)));
+
 				if (i < guild.requests.size() - 1) {
 					text.append(new LiteralText(", "));
 				}
 			}
+
 			context.getSource().sendFeedback(text, false);
 		}
 	}
@@ -281,8 +299,10 @@ public class Guilds implements ModInitializer {
 	private static void request(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
 			String guild = StringArgumentType.getString(context, "guild");
+
 			if (GM.guildExists(guild)) {
 				Guild g = GM.guilds.get(guild);
+
 				if (!g.requests.contains(uuid(context))) {
 					switch (g.visibility) {
 					case OPEN:
@@ -293,9 +313,11 @@ public class Guilds implements ModInitializer {
 						g.requests.add(uuid(context));
 						context.getSource().sendFeedback(new LiteralText("You have requested to join ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
 						ServerPlayerEntity owner = context.getSource().getMinecraftServer().getPlayerManager().getPlayer(g.owner);
+
 						if (owner != null) {
 							owner.sendMessage(new LiteralText(context.getSource().getPlayer().getGameProfile().getName()).formatted(Formatting.GOLD).append(new LiteralText(" has requested to join your guild").formatted(Formatting.YELLOW)).append(new LiteralText(" [ACCEPT]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_request " + context.getSource().getPlayer().getGameProfile().getName())).setColor(Formatting.RED))));
 						}
+
 						break;
 					case CLOSED:
 						context.getSource().sendFeedback(new LiteralText("You cannot join the guild ").formatted(Formatting.RED).append(new LiteralText(guild).formatted(g.getColor())).append(" because it is closed"), false);
@@ -316,8 +338,10 @@ public class Guilds implements ModInitializer {
 		if (doOwnerCheck(context)) {
 			String toKickName = StringArgumentType.getString(context, "player");
 			UUID toKickID = OfflineInfo.getUUID(context, "player");
+
 			if (!toKickID.equals(uuid(context))) {
 				Guild guild = GM.getGuild(uuid(context));
+
 				if (GM.getGuild(toKickID).equals(guild)) {
 					GM.leaveGuild(toKickID);
 					context.getSource().sendFeedback(new LiteralText("Kicked ").formatted(Formatting.GREEN).append(new LiteralText(toKickName).formatted(Formatting.GOLD)), false);
@@ -335,12 +359,15 @@ public class Guilds implements ModInitializer {
 		if (GM.getGuild(uuid(context)) != null) {
 			Guild guild = GM.getGuild(uuid(context));
 			Text text = new LiteralText("").append(new LiteralText(String.format("Members (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
+
 			for (int i = 0; i < guild.members.size(); i++) {
 				text.append(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), guild.members.get(i))).formatted(Formatting.GOLD));
+
 				if (i < guild.members.size() - 1) {
 					text.append(new LiteralText(", "));
 				}
 			}
+
 			context.getSource().sendFeedback(text, false);
 		} else {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
@@ -359,9 +386,11 @@ public class Guilds implements ModInitializer {
 		/*try {
 			File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), "guilds.hocon");
 			ConfigurationLoader<CommentedConfigurationNode> config = HoconConfigurationLoader.builder().setFile(configFile).build();
+
 			if (!configFile.exists()) {
 				configFile.createNewFile();
 			}
+
 			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setHeader("~~owo~~\n~~uwu~~").setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
 			CONFIG = node.getValue(TypeToken.of(Config.class), new Config());
 			config.save(node);
