@@ -1,5 +1,6 @@
 package io.github.giantnuker.guilds;
 
+import com.google.common.reflect.TypeToken;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -10,6 +11,7 @@ import io.github.nyliummc.commands.ServerCommandBuilder;
 import io.github.voidpointerdev.minecraft.offlineinfo.OfflineInfo;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.arguments.ColorArgumentType;
 import net.minecraft.command.arguments.EntityArgumentType;
 import net.minecraft.entity.player.PlayerEntity;
@@ -21,7 +23,17 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.ConfigurationOptions;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
+import ninja.leaping.configurate.loader.ConfigurationLoader;
+import ninja.leaping.configurate.objectmapping.DefaultObjectMapperFactory;
+import ninja.leaping.configurate.objectmapping.ObjectMapperFactory;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 public class Guilds implements ModInitializer {
@@ -61,6 +73,11 @@ public class Guilds implements ModInitializer {
 	private static void delete(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			if (confirmed) {
+				for (UUID member: GM.getGuild(uuid(context)).members) {
+					if (!member.equals(uuid(context))) {
+						ASAPMessages.message(member, context, new LiteralText("Your guild was deleted by the owner").formatted(Formatting.DARK_RED));
+					}
+				}
 				GM.removeGuild(GM.getGuild(uuid(context)).getName());
 				context.getSource().sendFeedback(new LiteralText("Your guild was removed").formatted(Formatting.GREEN), false);
 			} else {
@@ -131,13 +148,14 @@ public class Guilds implements ModInitializer {
 
 	private static void invite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
-			UUID player = EntityArgumentType.getPlayer(context, "player").getGameProfile().getId();
+			UUID player = OfflineInfo.getUUID(context, "player");
 			if (player == uuid(context)) {
 				context.getSource().sendFeedback(new LiteralText("You can't invite yourself to your own guild!").formatted(Formatting.RED), false);
 			} else {
 				GM.invite(player, GM.getGuild(uuid(context)).getName());
-				GM.sendInviteMessage(EntityArgumentType.getPlayer(context, "player"), GM.getGuild(uuid(context)).getName());
-				context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(Team.modifyText(EntityArgumentType.getPlayer(context, "player").getScoreboardTeam(), EntityArgumentType.getPlayer(context, "player").getName())).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+				String guild = GM.getGuild(uuid(context)).getName();
+				ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.DARK_RED))));
+				context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
 			}
 		}
 	}
@@ -202,10 +220,7 @@ public class Guilds implements ModInitializer {
 			UUID player = OfflineInfo.getUUID(context, "player");
 			if (GM.getGuild(player) == GM.getGuild(uuid(context))) {
 				GM.getGuild(uuid(context)).setOwner(player);
-				PlayerEntity pe = context.getSource().getMinecraftServer().getPlayerManager().getPlayer(player);
-				if (pe != null) {
-					pe.sendMessage(new LiteralText("You have been promoted to leader of your guild").formatted(Formatting.GREEN));
-				}
+				ASAPMessages.message(player, context, new LiteralText("You have been promoted to leader of your guild").formatted(Formatting.GREEN));
 				context.getSource().sendFeedback(new LiteralText("You have promoted ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to guild leader").formatted(Formatting.GREEN)), false);
 			} else {
 				context.getSource().sendFeedback(new LiteralText(String.format("%s is not a member of your guild", StringArgumentType.getString(context, "player"))).formatted(Formatting.RED), false);
@@ -229,9 +244,20 @@ public class Guilds implements ModInitializer {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);
 		}
 	}
-
 	@Override
 	public void onInitialize() {
+		/*try {
+			File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), "guilds.hocon");
+			ConfigurationLoader<CommentedConfigurationNode> config = HoconConfigurationLoader.builder().setFile(configFile).build();
+			if (!configFile.exists()) {
+				configFile.createNewFile();
+			}
+			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setHeader("~~owo~~\n~~uwu~~").setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
+			CONFIG = node.getValue(TypeToken.of(Config.class), new Config());
+			config.save(node);
+		} catch (IOException | ObjectMappingException e) {
+			e.printStackTrace();
+		}*/
 		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
 						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
@@ -242,8 +268,8 @@ public class Guilds implements ModInitializer {
 						.literal("ask").up()
 						.literal("close").up()
 						.root()
-						.literal("invite").argument("player", EntityArgumentType.player()).executes(Guilds::invite).root()
 						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).definitionDone()
+						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
 						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
 						.literal("invites").executes(Guilds::listInvites).root()
 						.literal("members").executes(Guilds::listMembers).root()
@@ -253,7 +279,6 @@ public class Guilds implements ModInitializer {
 						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
 						.literal("remove").predefinedArgument("player").root()
 						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("ignore").predefinedArgument("guild").root()
 						.literal("request").predefinedArgument("guild").root()
 						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
 						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
@@ -270,6 +295,7 @@ public class Guilds implements ModInitializer {
 				if (GM.getGuild(toKickID).equals(guild)) {
 					GM.leaveGuild(toKickID);
 					context.getSource().sendFeedback(new LiteralText("Kicked ").formatted(Formatting.GREEN).append(new LiteralText(toKickName).formatted(Formatting.GOLD)), false);
+					ASAPMessages.message(toKickID, context, new LiteralText("You have been ").formatted(Formatting.YELLOW).append(new LiteralText("kicked").formatted(Formatting.DARK_RED)).append(" from your guild."));
 				} else {
 					context.getSource().sendFeedback(new LiteralText("That player is not in your guild").formatted(Formatting.RED), false);
 				}

@@ -25,6 +25,7 @@ public class GuildManager {
 	public void removeGuild(String name) {
 		guilds.remove(name);
 		transferMembers(name, null);
+
 	}
 	public void renameGuild(String name, String to) {
 		guilds.get(name).setName(to);

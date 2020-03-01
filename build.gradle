@@ -21,6 +21,10 @@ group = project.maven_group
 repositories {
 	mavenCentral()
 	maven { url "https://jitpack.io" }
+	maven {
+		name = 'sponge'
+		url = 'https://repo.spongepowered.org/maven'
+	}
 }
 
 logger.lifecycle("""
@@ -49,6 +53,7 @@ dependencies {
 
 	modImplementation "com.github.nyliummc:commands:${project.commands_version}"
 	modImplementation "com.github.giantnuker:offlineinfo:${project.offlineinfo_version}"
+	compile 'org.spongepowered:configurate-hocon:3.6'
 }
 
 processResources {
