@@ -1,5 +1,6 @@
 package io.github.giantnuker.guilds;
 
+import com.google.common.reflect.TypeToken;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -10,6 +11,7 @@ import io.github.nyliummc.commands.ServerCommandBuilder;
 import io.github.voidpointerdev.minecraft.offlineinfo.OfflineInfo;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
+import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.arguments.ColorArgumentType;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
@@ -19,7 +21,16 @@ import net.minecraft.text.LiteralText;
 import net.minecraft.text.Style;
 import net.minecraft.text.Text;
 import net.minecraft.util.Formatting;
+import ninja.leaping.configurate.ConfigurationNode;
+import ninja.leaping.configurate.ConfigurationOptions;
+import ninja.leaping.configurate.commented.CommentedConfigurationNode;
+import ninja.leaping.configurate.hocon.HoconConfigurationLoader;
+import ninja.leaping.configurate.loader.ConfigurationLoader;
+import ninja.leaping.configurate.objectmapping.DefaultObjectMapperFactory;
+import ninja.leaping.configurate.objectmapping.ObjectMappingException;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.UUID;
 
 public class Guilds implements ModInitializer {
@@ -161,7 +172,7 @@ public class Guilds implements ModInitializer {
 
 		if (guild != null) {
 			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), context.getSource().getPlayer().getName());
-			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChatPrefix)).append(player).append(CONFIG.guildChatSuffix).append(StringArgumentType.getString(context, "message"));
+			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChat.prefix)).append(player).append(CONFIG.guildChat.suffix).append(StringArgumentType.getString(context, "message"));
 			context.getSource().getMinecraftServer().sendMessage(message);
 
 			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
@@ -383,7 +394,7 @@ public class Guilds implements ModInitializer {
 
 	@Override
 	public void onInitialize() {
-		/*try {
+		try {
 			File configFile = new File(FabricLoader.getInstance().getConfigDirectory(), "guilds.hocon");
 			ConfigurationLoader<CommentedConfigurationNode> config = HoconConfigurationLoader.builder().setFile(configFile).build();
 
@@ -396,7 +407,7 @@ public class Guilds implements ModInitializer {
 			config.save(node);
 		} catch (IOException | ObjectMappingException e) {
 			e.printStackTrace();
-		}*/
+		}
 		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
 						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
 						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
