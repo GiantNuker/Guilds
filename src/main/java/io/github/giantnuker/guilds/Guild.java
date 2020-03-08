@@ -11,10 +11,13 @@ import java.util.UUID;
 public class Guild {
 	public List<UUID> members = new ArrayList<>();
 	public List<UUID> requests = new ArrayList<>();
+	public int level = 0;
+	public int xp = 0;
 	protected Formatting color;
 	protected String name;
 	protected UUID owner;
 	protected Visibility visibility = Visibility.ASK;
+
 	public Guild(String name, Formatting color, UUID owner) {
 		this.name = name;
 		this.color = color;
@@ -53,6 +56,25 @@ public class Guild {
 
 	public void setOwner(UUID owner) {
 		this.owner = owner;
+	}
+
+	public void addXp(int xp, PlayerManager playerManager) {
+		this.xp += xp;
+		if (this.xp > Guilds.CONFIG.leveling.xpForLevel(level + 1)) {
+			this.level++;
+			this.xp -= Guilds.CONFIG.leveling.xpForLevel(level);
+
+			for (UUID member : members) {
+				ASAPMessages.message(member, playerManager, new LiteralText(String.format("Your guild leveled up to level %d!", level)).formatted(Formatting.GREEN));
+				if (!Guilds.CONFIG.leveling.canChat(level - 1) && Guilds.CONFIG.leveling.canChat(level)) {
+					ASAPMessages.message(member, playerManager, new LiteralText("You can now use guild chat").formatted(Formatting.YELLOW));
+				}
+			}
+		}
+	}
+
+	public int getMaxMembers() {
+		return Guilds.CONFIG.leveling.maxMembers(level);
 	}
 
 	public void setVisibility(Visibility visibility, PlayerManager playerManager) {
