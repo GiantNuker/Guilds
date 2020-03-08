@@ -392,6 +392,27 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
+	private static void cancelInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			if (GM.cancelInvite(GM.getGuild(uuid(context)).getName(), OfflineInfo.getUUID(context, "player"), context.getSource().getMinecraftServer().getPlayerManager())) {
+				context.getSource().sendFeedback(new LiteralText(String.format("Canceled %s's invite", StringArgumentType.getString(context, "player"))).formatted(Formatting.GREEN), false);
+			} else {
+				context.getSource().sendFeedback(new LiteralText(String.format("%s was not invited anyway", StringArgumentType.getString(context, "player"))).formatted(Formatting.RED), false);
+			}
+		}
+	}
+
+	private static void manageInvites(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+		if (doOwnerCheck(context)) {
+			context.getSource().sendFeedback(new LiteralText("Pending Invites:").formatted(Formatting.YELLOW), false);
+			for (UUID invite : GM.listInvites(GM.getGuild(uuid(context)).getName())) {
+				context.getSource().sendFeedback(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)).formatted(Formatting.GOLD).append(new LiteralText(" [X]").setStyle(new Style()
+				.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild cancel_invite " + OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)))
+				.setColor(Formatting.DARK_RED).setBold(true))), false);
+			}
+		}
+	}
+
 	@Override
 	public void onInitialize() {
 		try {
@@ -402,7 +423,7 @@ public class Guilds implements ModInitializer {
 				configFile.createNewFile();
 			}
 
-			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setHeader("~~owo~~\n~~uwu~~").setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
+			ConfigurationNode node = config.load(ConfigurationOptions.defaults().setObjectMapperFactory(DefaultObjectMapperFactory.getInstance()).setShouldCopyDefaults(true));
 			CONFIG = node.getValue(TypeToken.of(Config.class), new Config());
 			config.save(node);
 		} catch (IOException | ObjectMappingException e) {
@@ -422,6 +443,8 @@ public class Guilds implements ModInitializer {
 						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
 						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
 						.literal("invites").executes(Guilds::listInvites).root()
+						.literal("manage_invites").executes(Guilds::manageInvites).root()
+						.literal("cancel_invite").predefinedArgument("player").executes(Guilds::cancelInvite).root()
 						.literal("members").executes(Guilds::listMembers).root()
 						.literal("kick").predefinedArgument("player").executes(Guilds::kick).root()
 						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()

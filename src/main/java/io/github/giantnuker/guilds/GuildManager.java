@@ -1,6 +1,7 @@
 package io.github.giantnuker.guilds;
 
 import net.minecraft.network.MessageType;
+import net.minecraft.server.PlayerManager;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.ClickEvent;
 import net.minecraft.text.LiteralText;
@@ -121,12 +122,33 @@ public class GuildManager {
 	}
 
 	public void sendInviteMessage(ServerPlayerEntity player, String guild) {
-		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.DARK_RED))), MessageType.SYSTEM);
+		player.sendChatMessage(new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.RED))), MessageType.SYSTEM);
 	}
 
 	public void cancelRequests(UUID player) {
 		for (Guild g : guilds.values()) {
 			g.requests.remove(player);
+		}
+	}
+
+	public List<UUID> listInvites(String guild) {
+		List<UUID> players = new ArrayList<>();
+
+		for (Map.Entry<UUID, List<String>> player : pendingInvites.entrySet()) {
+			if (player.getValue().contains(guild)) {
+				players.add(player.getKey());
+			}
+		}
+
+		return players;
+	}
+
+	public boolean cancelInvite(String guild, UUID player, PlayerManager playerManager) {
+		if (pendingInvites.containsKey(player)) {
+			ASAPMessages.message(player, playerManager, new LiteralText(String.format("Your invitation to guild %s has been revoked", guild)).formatted(Formatting.RED));
+			return pendingInvites.get(player).remove(guild);
+		} else {
+			return false;
 		}
 	}
 }
