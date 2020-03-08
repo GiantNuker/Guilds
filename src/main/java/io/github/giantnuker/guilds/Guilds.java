@@ -159,9 +159,12 @@ public class Guilds implements ModInitializer {
 					context.getSource().sendFeedback(new LiteralText("This player has already sent a request to join your guild. Just accept that").formatted(Formatting.RED), false);
 				} else {
 					GM.invite(player, GM.getGuild(uuid(context)).getName());
-					String guild = GM.getGuild(uuid(context)).getName();
-					ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.RED))));
-					context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+
+					if (checkMaxMembers(context, GM.getGuild(uuid(context)).getName())) {
+						String guild = GM.getGuild(uuid(context)).getName();
+						ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.RED))));
+						context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
+					}
 				}
 			}
 		}
@@ -274,15 +277,17 @@ public class Guilds implements ModInitializer {
 	private static void acceptRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
-			UUID player = OfflineInfo.getUUID(context, "player");
+			if (checkMaxMembers(context, g.getName())) {
+				UUID player = OfflineInfo.getUUID(context, "player");
 
-			if (g.requests.contains(player)) {
-				g.requests.remove(player);
-				GM.joinGuild(player, g.getName());
-				context.getSource().sendFeedback(new LiteralText("Request accepted").formatted(Formatting.GREEN), false);
-				ASAPMessages.message(player, context, new LiteralText("Your request to join ").formatted(Formatting.GREEN).append(new LiteralText(g.getName()).formatted(g.getColor())).append(" was accepted"));
-			} else {
-				context.getSource().sendFeedback(new LiteralText("That player has not requested to join your guild").formatted(Formatting.RED), false);
+				if (g.requests.contains(player)) {
+					g.requests.remove(player);
+					GM.joinGuild(player, g.getName());
+					context.getSource().sendFeedback(new LiteralText("Request accepted").formatted(Formatting.GREEN), false);
+					ASAPMessages.message(player, context, new LiteralText("Your request to join ").formatted(Formatting.GREEN).append(new LiteralText(g.getName()).formatted(g.getColor())).append(" was accepted"));
+				} else {
+					context.getSource().sendFeedback(new LiteralText("That player has not requested to join your guild").formatted(Formatting.RED), false);
+				}
 			}
 		}
 	}
@@ -305,6 +310,26 @@ public class Guilds implements ModInitializer {
 
 			context.getSource().sendFeedback(text, false);
 		}
+	}
+
+	private static boolean checkMaxMembers(BetterCommandContext<ServerCommandSource> context, String guild) {
+		int membersLeft = GM.guilds.get(guild).getMaxMembers() - (GM.guilds.get(guild).members.size() - 1);
+
+		if (membersLeft <= 0) {
+			context.getSource().sendFeedback(new LiteralText("Your guild is full! Level up your guild to invite more players").formatted(Formatting.RED), false);
+			return false;
+		}
+
+		membersLeft -= GM.listInvites(guild).size() - 1;
+
+		if (membersLeft <= 0) {
+			context.getSource().sendFeedback(new LiteralText("Too many invites have been sent. If all were accepted you would pass your maximum allowed members ").formatted(Formatting.RED).append(new LiteralText("[Manage Invites]").setStyle(new Style()
+							.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild manage_invites"))
+							.setColor(Formatting.GOLD))), false);
+			return false;
+		}
+
+		return true;
 	}
 
 	private static void request(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
@@ -407,8 +432,8 @@ public class Guilds implements ModInitializer {
 			context.getSource().sendFeedback(new LiteralText("Pending Invites:").formatted(Formatting.YELLOW), false);
 			for (UUID invite : GM.listInvites(GM.getGuild(uuid(context)).getName())) {
 				context.getSource().sendFeedback(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)).formatted(Formatting.GOLD).append(new LiteralText(" [X]").setStyle(new Style()
-				.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild cancel_invite " + OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)))
-				.setColor(Formatting.DARK_RED).setBold(true))), false);
+								.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild cancel_invite " + OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)))
+								.setColor(Formatting.DARK_RED).setBold(true))), false);
 			}
 		}
 	}
