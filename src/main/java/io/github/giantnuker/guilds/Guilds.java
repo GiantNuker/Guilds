@@ -174,14 +174,18 @@ public class Guilds implements ModInitializer {
 		Guild guild = GM.getGuild(uuid(context));
 
 		if (guild != null) {
-			Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), context.getSource().getPlayer().getName());
-			Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChat.prefix)).append(player).append(CONFIG.guildChat.suffix).append(StringArgumentType.getString(context, "message"));
-			context.getSource().getMinecraftServer().sendMessage(message);
+			if (guild.canChat()) {
+				Text player = Team.modifyText(context.getSource().getPlayer().getScoreboardTeam(), context.getSource().getPlayer().getName());
+				Text message = new LiteralText("").append(new LiteralText(CONFIG.guildChat.prefix)).append(player).append(CONFIG.guildChat.suffix).append(StringArgumentType.getString(context, "message"));
+				context.getSource().getMinecraftServer().sendMessage(message);
 
-			for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
-				if (GM.getGuild(oplayer.getGameProfile().getId()) != null && GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
-					oplayer.sendMessage(message);
+				for (ServerPlayerEntity oplayer : context.getSource().getMinecraftServer().getPlayerManager().getPlayerList()) {
+					if (GM.getGuild(oplayer.getGameProfile().getId()) != null && GM.getGuild(oplayer.getGameProfile().getId()).equals(guild)) {
+						oplayer.sendMessage(message);
+					}
 				}
+			} else {
+				context.getSource().sendFeedback(new LiteralText("Your guild isn't a high enough level to use guild chat.").formatted(Formatting.RED), false);
 			}
 		} else {
 			context.getSource().sendFeedback(new LiteralText("You are not a member of a guild").formatted(Formatting.RED), false);

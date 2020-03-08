@@ -76,6 +76,9 @@ public class Guild {
 	public int getMaxMembers() {
 		return Guilds.CONFIG.leveling.maxMembers(level);
 	}
+	public boolean canChat() {
+		return Guilds.CONFIG.leveling.canChat(level);
+	}
 
 	public void setVisibility(Visibility visibility, PlayerManager playerManager) {
 		this.visibility = visibility;
