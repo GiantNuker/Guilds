@@ -158,10 +158,10 @@ public class Guilds implements ModInitializer {
 				if (GM.getGuild(uuid(context)).requests.contains(player)) {
 					context.getSource().sendFeedback(new LiteralText("This player has already sent a request to join your guild. Just accept that").formatted(Formatting.RED), false);
 				} else {
-					GM.invite(player, GM.getGuild(uuid(context)).getName());
 
-					if (checkMaxMembers(context, GM.getGuild(uuid(context)).getName())) {
+					if (checkMaxMembers(context)) {
 						String guild = GM.getGuild(uuid(context)).getName();
+						GM.invite(player, GM.getGuild(uuid(context)).getName());
 						ASAPMessages.message(player, context, new LiteralText("You have been invited to join the guild ").formatted(Formatting.YELLOW).append(new LiteralText(guild).formatted(GM.guilds.get(guild).getColor())).append(new LiteralText(" [JOIN]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild accept_invite " + guild)).setColor(Formatting.GREEN))).append(new LiteralText(" [DENY]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild deny_invite " + guild)).setColor(Formatting.RED))));
 						context.getSource().sendFeedback(new LiteralText("You have invited ").formatted(Formatting.GREEN).append(StringArgumentType.getString(context, "player")).append(new LiteralText(" to the guild").formatted(Formatting.GREEN)), false);
 					}
@@ -281,7 +281,7 @@ public class Guilds implements ModInitializer {
 	private static void acceptRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
-			if (checkMaxMembers(context, g.getName())) {
+			if (checkMaxMembers(context)) {
 				UUID player = OfflineInfo.getUUID(context, "player");
 
 				if (g.requests.contains(player)) {
@@ -316,15 +316,16 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static boolean checkMaxMembers(BetterCommandContext<ServerCommandSource> context, String guild) {
-		int membersLeft = GM.guilds.get(guild).getMaxMembers() - (GM.guilds.get(guild).members.size() - 1);
+	private static boolean checkMaxMembers(BetterCommandContext<ServerCommandSource> context) throws CommandSyntaxException {
+		String guild = GM.getGuild(uuid(context)).getName();
+		int membersLeft = GM.guilds.get(guild).getMaxMembers() - (GM.guilds.get(guild).members.size());
 
 		if (membersLeft <= 0) {
 			context.getSource().sendFeedback(new LiteralText("Your guild is full! Level up your guild to invite more players").formatted(Formatting.RED), false);
 			return false;
 		}
 
-		membersLeft -= GM.listInvites(guild).size() - 1;
+		membersLeft -= GM.listInvites(guild).size();
 
 		if (membersLeft <= 0) {
 			context.getSource().sendFeedback(new LiteralText("Too many invites have been sent. If all were accepted you would pass your maximum allowed members ").formatted(Formatting.RED).append(new LiteralText("[Manage Invites]").setStyle(new Style()
@@ -346,6 +347,19 @@ public class Guilds implements ModInitializer {
 				if (!g.requests.contains(uuid(context))) {
 					switch (g.visibility) {
 					case OPEN:
+						int membersLeft = GM.guilds.get(guild).getMaxMembers() - (GM.guilds.get(guild).members.size());
+
+						if (membersLeft <= 0) {
+							context.getSource().sendFeedback(new LiteralText("That guild is full").formatted(Formatting.RED), false);
+							break;
+						}
+
+						membersLeft -= GM.listInvites(guild).size();
+
+						if (membersLeft <= 0) {
+							context.getSource().sendFeedback(new LiteralText("Including open invites, that guild is full").formatted(Formatting.RED), false);
+							break;
+						}
 						context.getSource().sendFeedback(new LiteralText("You have joined the open guild ").formatted(Formatting.GREEN).append(new LiteralText(guild).formatted(g.getColor())), false);
 						GM.joinGuild(uuid(context), guild);
 						break;
