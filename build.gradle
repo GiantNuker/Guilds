@@ -36,7 +36,7 @@ logger.lifecycle("""
 	Fabric-Loader Version: ${project.loader_version}
 	Fabric-API Version: ${project.fabric_version}
 	Commando Version: ${project.commands_version}
-	Offline Info: ${project.offlineinfo_version}
+	Offline Info Version: ${project.offlineinfo_version}
 	=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 """)
 
@@ -51,7 +51,7 @@ dependencies {
 	// We use checker for annotations
 	implementation "org.checkerframework:checker-qual:${project.checker_version}"
 
-	modImplementation "com.github.nyliummc:commands:${project.commands_version}"
+	modImplementation "com.github.nyliummc:commando:${project.commands_version}"
 	modImplementation "com.github.giantnuker:offlineinfo:${project.offlineinfo_version}"
 	compile 'org.spongepowered:configurate-hocon:3.6'
 }

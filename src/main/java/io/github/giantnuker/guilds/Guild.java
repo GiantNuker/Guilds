@@ -63,12 +63,15 @@ public class Guild {
 		if (this.xp > Guilds.CONFIG.leveling.xpForLevel(level + 1)) {
 			this.level++;
 			this.xp -= Guilds.CONFIG.leveling.xpForLevel(level);
+			sayLevelUp(playerManager);
+		}
+	}
 
-			for (UUID member : members) {
-				ASAPMessages.message(member, playerManager, new LiteralText(String.format("Your guild leveled up to level %d!", level)).formatted(Formatting.GREEN));
-				if (!Guilds.CONFIG.leveling.canChat(level - 1) && Guilds.CONFIG.leveling.canChat(level)) {
-					ASAPMessages.message(member, playerManager, new LiteralText("You can now use guild chat").formatted(Formatting.YELLOW));
-				}
+	public void sayLevelUp(PlayerManager playerManager) {
+		for (UUID member : members) {
+			ASAPMessages.message(member, playerManager, new LiteralText(String.format("Your guild leveled up to level %d!", level)).formatted(Formatting.GREEN));
+			if (!Guilds.CONFIG.leveling.canChat(level - 1) && Guilds.CONFIG.leveling.canChat(level)) {
+				ASAPMessages.message(member, playerManager, new LiteralText("You can now use guild chat").formatted(Formatting.YELLOW));
 			}
 		}
 	}

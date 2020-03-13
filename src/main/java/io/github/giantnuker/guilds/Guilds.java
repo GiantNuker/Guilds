@@ -1,13 +1,14 @@
 package io.github.giantnuker.guilds;
 
 import com.google.common.reflect.TypeToken;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
-import io.github.nyliummc.commands.BetterCommandContext;
-import io.github.nyliummc.commands.CommandFeedback;
-import io.github.nyliummc.commands.ServerCommandBuilder;
+import io.github.nyliummc.commando.BetterCommandContext;
+import io.github.nyliummc.commando.ServerCommandBuilder;
+import io.github.nyliummc.commando.ServerCommandFeedback;
 import io.github.voidpointerdev.minecraft.offlineinfo.OfflineInfo;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
@@ -65,7 +66,7 @@ public class Guilds implements ModInitializer {
 		}
 	};
 
-	private static void delete(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
+	private static void delete(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback, boolean confirmed) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			if (confirmed) {
 				for (UUID member : GM.getGuild(uuid(context)).members) {
@@ -100,7 +101,7 @@ public class Guilds implements ModInitializer {
 		return false;
 	}
 
-	private static void create(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void create(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
 			String name = StringArgumentType.getString(context, "name");
 
@@ -118,7 +119,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void help(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) {
+	private static void help(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) {
 		context.getSource().sendFeedback(new LiteralText("---------- Guild Help ----------").formatted(Formatting.DARK_GREEN), false);
 
 		for (String[] cmd : helpArray) {
@@ -135,7 +136,7 @@ public class Guilds implements ModInitializer {
 		context.getSource().sendFeedback(new LiteralText("-----------------------------").formatted(Formatting.DARK_GREEN), false);
 	}
 
-	private static void acceptInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void acceptInvite(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
 			if (GM.acceptInvite(uuid(context), StringArgumentType.getString(context, "invite"))) {
 				Guild guild = GM.guilds.get(StringArgumentType.getString(context, "invite"));
@@ -148,7 +149,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void invite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void invite(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			UUID player = OfflineInfo.getUUID(context, "player");
 
@@ -170,7 +171,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void chat(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void chat(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		Guild guild = GM.getGuild(uuid(context));
 
 		if (guild != null) {
@@ -192,7 +193,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void recolor(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void recolor(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Formatting color = ColorArgumentType.getColor(context, "color");
 			GM.getGuild(uuid(context)).setColor(color);
@@ -200,7 +201,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void rename(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void rename(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			String name = StringArgumentType.getString(context, "name");
 
@@ -213,7 +214,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void listInvites(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void listInvites(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.pendingInvites.get(uuid(context)) == null || GM.pendingInvites.get(uuid(context)).isEmpty()) {
 			context.getSource().sendFeedback(new LiteralText("You have no pending invites").formatted(Formatting.YELLOW), false);
 		} else {
@@ -223,7 +224,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void denyInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void denyInvite(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.denyInvite(uuid(context), StringArgumentType.getString(context, "invite"))) {
 			Guild guild = GM.guilds.get(StringArgumentType.getString(context, "invite"));
 			context.getSource().sendFeedback(new LiteralText("You have denied the invite to ").formatted(Formatting.GREEN).append(new LiteralText(guild.getName()).formatted(guild.getColor())), false);
@@ -232,7 +233,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void promote(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void promote(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			UUID player = OfflineInfo.getUUID(context, "player");
 
@@ -246,7 +247,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void leave(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, boolean confirm) throws CommandSyntaxException {
+	private static void leave(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback, boolean confirm) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) != null) {
 			if (!GM.getGuild(uuid(context)).getOwner().equals(uuid(context))) {
 				if (confirm) {
@@ -263,7 +264,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void denyRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void denyRequest(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
 			UUID player = OfflineInfo.getUUID(context, "player");
@@ -278,7 +279,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void acceptRequest(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void acceptRequest(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Guild g = GM.getGuild(uuid(context));
 			if (checkMaxMembers(context)) {
@@ -296,7 +297,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void requests(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void requests(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			Guild guild = GM.getGuild(uuid(context));
 			Text text = new LiteralText("").append(new LiteralText(String.format("Requests (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
@@ -337,7 +338,7 @@ public class Guilds implements ModInitializer {
 		return true;
 	}
 
-	private static void request(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void request(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) == null) {
 			String guild = StringArgumentType.getString(context, "guild");
 
@@ -388,7 +389,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void kick(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void kick(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			String toKickName = StringArgumentType.getString(context, "player");
 			UUID toKickID = OfflineInfo.getUUID(context, "player");
@@ -409,7 +410,7 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void listMembers(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void listMembers(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (GM.getGuild(uuid(context)) != null) {
 			Guild guild = GM.getGuild(uuid(context));
 			Text text = new LiteralText("").append(new LiteralText(String.format("Members (%d): ", guild.members.size())).formatted(Formatting.YELLOW));
@@ -428,14 +429,14 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void setVisibility(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback, Guild.Visibility visibility) throws CommandSyntaxException {
+	private static void setVisibility(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback, Guild.Visibility visibility) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			GM.getGuild(uuid(context)).setVisibility(visibility, context.getSource().getMinecraftServer().getPlayerManager());
 			context.getSource().sendFeedback(new LiteralText("Your guilds visibility was changed to ").formatted(Formatting.GREEN).append(new LiteralText(visibility.name()).formatted(Formatting.GOLD)), false);
 		}
 	}
 
-	private static void cancelInvite(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void cancelInvite(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			if (GM.cancelInvite(GM.getGuild(uuid(context)).getName(), OfflineInfo.getUUID(context, "player"), context.getSource().getMinecraftServer().getPlayerManager())) {
 				context.getSource().sendFeedback(new LiteralText(String.format("Canceled %s's invite", StringArgumentType.getString(context, "player"))).formatted(Formatting.GREEN), false);
@@ -445,13 +446,32 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
-	private static void manageInvites(BetterCommandContext<ServerCommandSource> context, CommandFeedback feedback) throws CommandSyntaxException {
+	private static void manageInvites(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
 		if (doOwnerCheck(context)) {
 			context.getSource().sendFeedback(new LiteralText("Pending Invites:").formatted(Formatting.YELLOW), false);
 			for (UUID invite : GM.listInvites(GM.getGuild(uuid(context)).getName())) {
 				context.getSource().sendFeedback(new LiteralText(OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)).formatted(Formatting.GOLD).append(new LiteralText(" [X]").setStyle(new Style()
 								.setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild cancel_invite " + OfflineInfo.getNameById(context.getSource().getMinecraftServer().getUserCache(), invite)))
 								.setColor(Formatting.DARK_RED).setBold(true))), false);
+			}
+		}
+	}
+
+	private static void xp(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) {
+		Guild guild = GM.guilds.get(StringArgumentType.getString(context, "guild"));
+
+		if (guild == null) {
+			feedback.text(new LiteralText("That guild does not exist").formatted(Formatting.RED));
+		} else {
+			if (context.hasNode("level")) {
+				for (int i = 0; i < IntegerArgumentType.getInteger(context, "levels"); i++) {
+					guild.level++;
+					guild.sayLevelUp(context.getSource().getMinecraftServer().getPlayerManager());
+				}
+				feedback.text(new LiteralText(String.format("Increased guild %s's level by %d (now %d)", guild.getName(), IntegerArgumentType.getInteger(context, "levels"), guild.level)).formatted(Formatting.GREEN));
+			} else {
+				guild.addXp(IntegerArgumentType.getInteger(context, "amount"), context.getSource().getMinecraftServer().getPlayerManager());
+				feedback.text(new LiteralText(String.format("Increased guild %s's xp by %d (now %d/%d)", guild.getName(), IntegerArgumentType.getInteger(context, "amount"), guild.xp, Guilds.CONFIG.leveling.xpForLevel(guild.level + 1))).formatted(Formatting.GREEN));
 			}
 		}
 	}
@@ -472,36 +492,41 @@ public class Guilds implements ModInitializer {
 		} catch (IOException | ObjectMappingException e) {
 			e.printStackTrace();
 		}
-		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").executes(Guilds::help)
-						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).executes(Guilds::create).root()
-						.literal("rename").argument("name", StringArgumentType.word()).executes(Guilds::rename).root()
-						.literal("recolor").argument("color", ColorArgumentType.color()).executes(Guilds::recolor).root()
-						.literal("delete").executes((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.delete(context, feedback, true)).root()
+		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").execute(Guilds::help)
+						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).execute(Guilds::create).root()
+						.literal("rename").argument("name", StringArgumentType.word()).execute(Guilds::rename).root()
+						.literal("recolor").argument("color", ColorArgumentType.color()).execute(Guilds::recolor).root()
+						.literal("delete").execute((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.delete(context, feedback, true)).root()
 						.literal("visibility")
-						.literal("open").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.OPEN)).up()
-						.literal("ask").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.ASK)).up()
-						.literal("closed").executes((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.CLOSED)).up()
+						.literal("open").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.OPEN)).up()
+						.literal("ask").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.ASK)).up()
+						.literal("closed").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.CLOSED)).up()
 						.root()
-						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).definitionDone()
-						.literal("invite").predefinedArgument("player").executes(Guilds::invite).root()
-						.literal("promote").predefinedArgument("player").executes(Guilds::promote).root()
-						.literal("invites").executes(Guilds::listInvites).root()
-						.literal("manage_invites").executes(Guilds::manageInvites).root()
-						.literal("cancel_invite").predefinedArgument("player").executes(Guilds::cancelInvite).root()
-						.literal("members").executes(Guilds::listMembers).root()
-						.literal("kick").predefinedArgument("player").executes(Guilds::kick).root()
-						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).definitionDone()
-						.literal("accept_invite").predefinedArgument("invite").executes(Guilds::acceptInvite).root()
-						.literal("deny_invite").predefinedArgument("invite").executes(Guilds::denyInvite).root()
-						.literal("remove").predefinedArgument("player").root()
-						.defineArgument("guild", StringArgumentType.word()).definitionDone()
-						.literal("request").predefinedArgument("guild").executes(Guilds::request).root()
-						.literal("requests").executes(Guilds::requests).root()
-						.literal("accept_request").predefinedArgument("player").executes(Guilds::acceptRequest).root()
-						.literal("deny_request").predefinedArgument("player").executes(Guilds::denyRequest).root()
-						.literal("leave").executes((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").executes((context, feedback) -> Guilds.leave(context, feedback, true)).root()
-						.literal("chat").argument("message", StringArgumentType.greedyString()).executes(Guilds::chat).root()
-						.literal("help").executes(Guilds::help).root()
+						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).defineUp()
+						.literal("invite").definedArgument("player").execute(Guilds::invite).root()
+						.literal("promote").definedArgument("player").execute(Guilds::promote).root()
+						.literal("invites").execute(Guilds::listInvites).root()
+						.literal("manage_invites").execute(Guilds::manageInvites).root()
+						.literal("cancel_invite").setInvisible().definedArgument("player").execute(Guilds::cancelInvite).root()
+						.literal("members").execute(Guilds::listMembers).root()
+						.literal("kick").definedArgument("player").execute(Guilds::kick).root()
+						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).defineUp()
+						.literal("accept_invite").setInvisible().definedArgument("invite").execute(Guilds::acceptInvite).root()
+						.literal("deny_invite").setInvisible().definedArgument("invite").execute(Guilds::denyInvite).root()
+						.literal("remove").definedArgument("player").root()
+						.defineArgument("guild", StringArgumentType.word()).defineUp()
+						.literal("xp").require(source -> source.hasPermissionLevel(2))
+						.definedArgument("guild")
+						.literal("add").argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::xp).up()
+						.literal("level").argument("levels", IntegerArgumentType.integer(1)).execute(Guilds::xp)
+						.root()
+						.literal("request").definedArgument("guild").execute(Guilds::request).root()
+						.literal("requests").execute(Guilds::requests).root()
+						.literal("accept_request").setInvisible().definedArgument("player").execute(Guilds::acceptRequest).root()
+						.literal("deny_request").setInvisible().definedArgument("player").execute(Guilds::denyRequest).root()
+						.literal("leave").execute((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.leave(context, feedback, true)).root()
+						.literal("chat").argument("message", StringArgumentType.greedyString()).execute(Guilds::chat).root()
+						.literal("help").execute(Guilds::help).root()
 						.build()));
 	}
 }
