@@ -476,6 +476,17 @@ public class Guilds implements ModInitializer {
 		}
 	}
 
+	private static void info(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
+		Guild g = GM.getGuild(uuid(context));
+		if (g == null) {
+			feedback.text(new LiteralText("You are not part of a guild").formatted(Formatting.RED));
+		} else {
+			feedback.text(new LiteralText("Guild Name: ").formatted(Formatting.YELLOW).append(new LiteralText(g.getName()).formatted(g.getColor())));
+			feedback.text(new LiteralText(String.format("Level: %d (%d/%d to next level)", g.level, g.xp, Guilds.CONFIG.leveling.xpForLevel(g.level + 1))).formatted(Formatting.YELLOW));
+			feedback.text(new LiteralText("").append(new LiteralText("[MEMBERS]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild members")).setColor(Formatting.GOLD))));
+		}
+	}
+
 	@Override
 	public void onInitialize() {
 		try {
@@ -520,6 +531,7 @@ public class Guilds implements ModInitializer {
 						.literal("add").argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::xp).up()
 						.literal("level").argument("levels", IntegerArgumentType.integer(1)).execute(Guilds::xp)
 						.root()
+						.literal("info").execute(Guilds::info).root()
 						.literal("request").definedArgument("guild").execute(Guilds::request).root()
 						.literal("requests").execute(Guilds::requests).root()
 						.literal("accept_request").setInvisible().definedArgument("player").execute(Guilds::acceptRequest).root()
