@@ -17,6 +17,7 @@ public class Guild {
 	protected String name;
 	protected UUID owner;
 	protected Visibility visibility = Visibility.ASK;
+	protected long boostTicksLeft = 0;
 
 	public Guild(String name, Formatting color, UUID owner) {
 		this.name = name;
@@ -59,11 +60,28 @@ public class Guild {
 	}
 
 	public void addXp(int xp, PlayerManager playerManager) {
-		this.xp += xp;
+		this.xp += boostTicksLeft > 0 ? xp * Guilds.CONFIG.leveling.boosting.boostMultiplier : xp;
 		if (this.xp > Guilds.CONFIG.leveling.xpForLevel(level + 1)) {
 			this.level++;
 			this.xp -= Guilds.CONFIG.leveling.xpForLevel(level);
 			sayLevelUp(playerManager);
+		}
+	}
+
+	public void boost(int time) {
+		boostTicksLeft += time * 1200;
+	}
+
+	public void tick(PlayerManager playerManager) {
+		if (boostTicksLeft > 0) {
+			boostTicksLeft--;
+			if (boostTicksLeft == 0) {
+				for (UUID member : members) {
+					if (playerManager.getPlayer(member) != null) { // Online check
+						ASAPMessages.message(member, playerManager, new LiteralText("The guild's boost has run out").formatted(Formatting.RED));
+					}
+				}
+			}
 		}
 	}
 

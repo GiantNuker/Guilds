@@ -14,6 +14,7 @@ import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.registry.CommandRegistry;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.command.arguments.ColorArgumentType;
+import net.minecraft.scoreboard.ScoreboardPlayerScore;
 import net.minecraft.scoreboard.Team;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -50,6 +51,8 @@ public class Guilds implements ModInitializer {
 					{"requests", "guild", "View all join requests"},
 					{"leave", "Leave your guild"},
 					{"chat", "Send a message in private guild chat"},
+					{"info", "Get info on your guild"},
+					{"boost", "score", "amount", "Boost the guild using the scoreboard object specified"},
 					{"help", "Show this message"}
 	};
 	public static Config CONFIG = new Config();
@@ -483,6 +486,7 @@ public class Guilds implements ModInitializer {
 		} else {
 			feedback.text(new LiteralText("Guild Name: ").formatted(Formatting.YELLOW).append(new LiteralText(g.getName()).formatted(g.getColor())));
 			feedback.text(new LiteralText(String.format("Level: %d (%d/%d to next level)", g.level, g.xp, Guilds.CONFIG.leveling.xpForLevel(g.level + 1))).formatted(Formatting.YELLOW));
+			feedback.text(new LiteralText(g.boostTicksLeft > 0 ? String.format("Boost expires in %d minutes", g.boostTicksLeft / 1200) : "Guild is not currently boosted").formatted(Formatting.YELLOW));
 			feedback.text(new LiteralText("").append(new LiteralText("[MEMBERS]").setStyle(new Style().setClickEvent(new ClickEvent(ClickEvent.Action.RUN_COMMAND, "/guild members")).setColor(Formatting.GOLD))));
 		}
 	}
@@ -525,6 +529,7 @@ public class Guilds implements ModInitializer {
 						.literal("accept_invite").setInvisible().definedArgument("invite").execute(Guilds::acceptInvite).root()
 						.literal("deny_invite").setInvisible().definedArgument("invite").execute(Guilds::denyInvite).root()
 						.literal("remove").definedArgument("player").root()
+						.literal("boost").argument("score", StringArgumentType.word()).argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::boost).root()
 						.defineArgument("guild", StringArgumentType.word()).defineUp()
 						.literal("xp").require(source -> source.hasPermissionLevel(2))
 						.definedArgument("guild")
@@ -540,5 +545,28 @@ public class Guilds implements ModInitializer {
 						.literal("chat").argument("message", StringArgumentType.greedyString()).execute(Guilds::chat).root()
 						.literal("help").execute(Guilds::help).root()
 						.build()));
+	}
+
+	private static void boost(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
+		if (CONFIG.leveling.boosting.exchange.keySet().contains(StringArgumentType.getString(context, "score"))) {
+			ScoreboardPlayerScore scoreValue = context.getSource().getMinecraftServer().getScoreboard().getPlayerScore(context.getSource().getPlayer().getGameProfile().getName(), context.getSource().getMinecraftServer().getScoreboard().getObjective(StringArgumentType.getString(context, "score")));
+			if (scoreValue.getScore() < IntegerArgumentType.getInteger(context, "amount")) {
+				feedback.text(new LiteralText(String.format("You don't have enough %s to boost (entered amount %d)", StringArgumentType.getString(context, "score"), IntegerArgumentType.getInteger(context, "amount"))).formatted(Formatting.RED));
+			} else if (GM.getGuild(uuid(context)) != null) {
+				Guild g = GM.getGuild(uuid(context));
+				scoreValue.incrementScore(-IntegerArgumentType.getInteger(context, "amount"));
+				int time = IntegerArgumentType.getInteger(context, "amount") * CONFIG.leveling.boosting.exchange.get(StringArgumentType.getString(context, "score"));
+				g.boost(time);
+				for (UUID member : GM.getGuild(uuid(context)).members) {
+					if (context.getSource().getMinecraftServer().getPlayerManager().getPlayer(member) != null) { // Online check
+						ASAPMessages.message(member, context, new LiteralText(String.format("Guild boosted for %d minutes by ", time)).append(context.getSource().getPlayer().getName()).formatted(Formatting.GREEN));
+					}
+				}
+			} else {
+				feedback.text(new LiteralText("You aren't part of a guild").formatted(Formatting.RED));
+			}
+		} else {
+			feedback.text(new LiteralText("You can't boost with that Scoreboard object").formatted(Formatting.RED));
+		}
 	}
 }

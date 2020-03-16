@@ -22,8 +22,6 @@ public abstract class PlayerEntityMixin {
 	@Shadow
 	public abstract GameProfile getGameProfile();
 
-	@Shadow private int lastPlayedLevelUpSoundTime;
-
 	@Redirect(method = "getDisplayName", at = @At(value = "INVOKE", target = "Lnet/minecraft/scoreboard/Team;modifyText(Lnet/minecraft/scoreboard/AbstractTeam;Lnet/minecraft/text/Text;)Lnet/minecraft/text/Text;"))
 	private Text modifyByGuild(AbstractTeam abstractTeam, Text text) {
 		Guild g = Guilds.GM.getGuild(getGameProfile().getId());
@@ -39,9 +37,9 @@ public abstract class PlayerEntityMixin {
 	public void doGuildUpdate(CallbackInfo ci) {
 		Guild g = Guilds.GM.getGuild(getGameProfile().getId());
 		if (g != null) {
-			lastPlayedLevelUpSoundTime++;
-			if (lastPlayedLevelUpSoundTime >= Guilds.CONFIG.leveling.xptime * 1200) {
-				lastPlayedLevelUpSoundTime = 0;
+			ticksSinceGuildLevel++;
+			if (ticksSinceGuildLevel >= Guilds.CONFIG.leveling.xptime * 1200) {
+				ticksSinceGuildLevel = 0;
 				g.addXp(1, ((PlayerEntity)(Object)this).getServer().getPlayerManager());
 			}
 		}

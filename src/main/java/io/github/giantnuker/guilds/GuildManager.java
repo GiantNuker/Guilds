@@ -19,6 +19,12 @@ public class GuildManager {
 	protected Map<UUID, List<String>> pendingInvites = new HashMap<>();
 	protected Map<UUID, String> guildMembers = new HashMap<>();
 
+	public void tick(PlayerManager playerManager) {
+		for (Guild value : guilds.values()) {
+			value.tick(playerManager);
+		}
+	}
+
 	public void addGuild(Guild guild) {
 		guilds.put(guild.getName(), guild);
 		guildMembers.put(guild.getOwner(), guild.getName());
