@@ -17,7 +17,16 @@ import java.util.UUID;
 public class GuildManager {
 	protected Map<String, Guild> guilds = new HashMap<>();
 	protected Map<UUID, List<String>> pendingInvites = new HashMap<>();
-	protected Map<UUID, String> guildMembers = new HashMap<>();
+	protected transient Map<UUID, String> guildMembers = new HashMap<>();
+
+	public void assignMembers() {
+		guildMembers.clear();
+		for (Guild g: guilds.values()) {
+			for (UUID member : g.members) {
+				guildMembers.put(member, g.getName());
+			}
+		}
+	}
 
 	public void tick(PlayerManager playerManager) {
 		for (Guild value : guilds.values()) {
