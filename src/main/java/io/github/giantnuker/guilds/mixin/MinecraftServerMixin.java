@@ -6,6 +6,7 @@ import io.github.giantnuker.guilds.GuildManager;
 import io.github.giantnuker.guilds.Guilds;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.PlayerManager;
+import net.minecraft.world.level.LevelGeneratorOptions;
 import net.minecraft.world.level.LevelGeneratorType;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -38,7 +39,7 @@ public class MinecraftServerMixin {
 	}
 
 	@Inject(method = "loadWorld", at = @At("RETURN"))
-	private void loadGuilds(String name, String serverName, long seed, LevelGeneratorType generatorType, JsonElement generatorSettings, CallbackInfo ci) {
+	private void loadGuilds(String name, String serverName, long seed, LevelGeneratorOptions levelGeneratorOptions, CallbackInfo ci) {
 		File file = new File(gameDir, "guilds.json");
 
 		if (file.exists()) {

@@ -46,7 +46,7 @@ dependencies {
 	mappings "net.fabricmc:yarn:${project.minecraft_version}+build.${project.yarn_build}:v2"
 	modCompile "net.fabricmc:fabric-loader:${project.loader_version}"
 
-	//modCompile "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+	modCompile "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
 	// We use checker for annotations
 	implementation "org.checkerframework:checker-qual:${project.checker_version}"

@@ -7,6 +7,7 @@ import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.mojang.brigadier.suggestion.SuggestionProvider;
 import io.github.nyliummc.commando.BetterCommandContext;
+import io.github.nyliummc.commando.CommandBuilder;
 import io.github.nyliummc.commando.ServerCommandBuilder;
 import io.github.nyliummc.commando.ServerCommandFeedback;
 import io.github.voidpointerdev.minecraft.offlineinfo.OfflineInfo;
@@ -507,44 +508,47 @@ public class Guilds implements ModInitializer {
 		} catch (IOException | ObjectMappingException e) {
 			e.printStackTrace();
 		}
-		CommandRegistry.INSTANCE.register(false, dispatcher -> dispatcher.register(new ServerCommandBuilder("guild").execute(Guilds::help)
-						.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).execute(Guilds::create).root()
-						.literal("rename").argument("name", StringArgumentType.word()).execute(Guilds::rename).root()
-						.literal("recolor").argument("color", ColorArgumentType.color()).execute(Guilds::recolor).root()
-						.literal("delete").execute((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.delete(context, feedback, true)).root()
-						.literal("visibility")
-						.literal("open").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.OPEN)).up()
-						.literal("ask").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.ASK)).up()
-						.literal("closed").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.CLOSED)).up()
-						.root()
-						.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).defineUp()
-						.literal("invite").definedArgument("player").execute(Guilds::invite).root()
-						.literal("promote").definedArgument("player").execute(Guilds::promote).root()
-						.literal("invites").execute(Guilds::listInvites).root()
-						.literal("manage_invites").execute(Guilds::manageInvites).root()
-						.literal("cancel_invite").setInvisible().definedArgument("player").execute(Guilds::cancelInvite).root()
-						.literal("members").execute(Guilds::listMembers).root()
-						.literal("kick").definedArgument("player").execute(Guilds::kick).root()
-						.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).defineUp()
-						.literal("accept_invite").setInvisible().definedArgument("invite").execute(Guilds::acceptInvite).root()
-						.literal("deny_invite").setInvisible().definedArgument("invite").execute(Guilds::denyInvite).root()
-						.literal("remove").definedArgument("player").root()
-						.literal("boost").argument("score", StringArgumentType.word()).argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::boost).root()
-						.defineArgument("guild", StringArgumentType.word()).defineUp()
-						.literal("xp").require(source -> source.hasPermissionLevel(2))
-						.definedArgument("guild")
-						.literal("add").argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::xp).up()
-						.literal("level").argument("levels", IntegerArgumentType.integer(1)).execute(Guilds::xp)
-						.root()
-						.literal("info").execute(Guilds::info).root()
-						.literal("request").definedArgument("guild").execute(Guilds::request).root()
-						.literal("requests").execute(Guilds::requests).root()
-						.literal("accept_request").setInvisible().definedArgument("player").execute(Guilds::acceptRequest).root()
-						.literal("deny_request").setInvisible().definedArgument("player").execute(Guilds::denyRequest).root()
-						.literal("leave").execute((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.leave(context, feedback, true)).root()
-						.literal("chat").argument("message", StringArgumentType.greedyString()).execute(Guilds::chat).root()
-						.literal("help").execute(Guilds::help).root()
-						.build()));
+		CommandRegistry.INSTANCE.register(false, dispatcher -> {
+			CommandBuilder builder = new ServerCommandBuilder("guild").execute(Guilds::help)
+							.literal("create").argument("name", StringArgumentType.word()).argument("color", ColorArgumentType.color()).execute(Guilds::create).root()
+							.literal("rename").argument("name", StringArgumentType.word()).execute(Guilds::rename).root()
+							.literal("recolor").argument("color", ColorArgumentType.color()).execute(Guilds::recolor).root()
+							.literal("delete").execute((context, feedback) -> Guilds.delete(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.delete(context, feedback, true)).root()
+							.literal("visibility")
+							.literal("open").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.OPEN)).up()
+							.literal("ask").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.ASK)).up()
+							.literal("closed").execute((context, feedback) -> Guilds.setVisibility(context, feedback, Guild.Visibility.CLOSED)).up()
+							.root()
+							.defineArgument("player", StringArgumentType.word()).suggest(OfflineInfo.ONLINE_PROVIDER).defineUp()
+							.literal("invite").definedArgument("player").execute(Guilds::invite).root()
+							.literal("promote").definedArgument("player").execute(Guilds::promote).root()
+							.literal("invites").execute(Guilds::listInvites).root()
+							.literal("manage_invites").execute(Guilds::manageInvites).root()
+							.literal("cancel_invite").setInvisible().definedArgument("player").execute(Guilds::cancelInvite).root()
+							.literal("members").execute(Guilds::listMembers).root()
+							.literal("kick").definedArgument("player").execute(Guilds::kick).root()
+							.defineArgument("invite", StringArgumentType.word()).suggest(INVITES_PROVIDER).defineUp()
+							.literal("accept_invite").setInvisible().definedArgument("invite").execute(Guilds::acceptInvite).root()
+							.literal("deny_invite").setInvisible().definedArgument("invite").execute(Guilds::denyInvite).root()
+							.literal("remove").definedArgument("player").root()
+							.literal("boost").argument("score", StringArgumentType.word()).argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::boost).root()
+							.defineArgument("guild", StringArgumentType.word()).defineUp()
+							.literal("xp").require(source -> source.hasPermissionLevel(2))
+							.definedArgument("guild")
+							.literal("add").argument("amount", IntegerArgumentType.integer(1)).execute(Guilds::xp).up()
+							.literal("level").argument("levels", IntegerArgumentType.integer(1)).execute(Guilds::xp)
+							.root()
+							.literal("info").execute(Guilds::info).root()
+							.literal("request").definedArgument("guild").execute(Guilds::request).root()
+							.literal("requests").execute(Guilds::requests).root()
+							.literal("accept_request").setInvisible().definedArgument("player").execute(Guilds::acceptRequest).root()
+							.literal("deny_request").setInvisible().definedArgument("player").execute(Guilds::denyRequest).root()
+							.literal("leave").execute((context, feedback) -> Guilds.leave(context, feedback, false)).literal("confirmed").execute((context, feedback) -> Guilds.leave(context, feedback, true)).root()
+							.literal("chat").argument("message", StringArgumentType.greedyString()).execute(Guilds::chat).root()
+							.literal("help").execute(Guilds::help).root();
+			dispatcher.register(builder.build());
+			dispatcher.register(new ServerCommandBuilder("gc").argument("message", StringArgumentType.greedyString()).execute(Guilds::chat).root().build());
+		});
 	}
 
 	private static void boost(BetterCommandContext<ServerCommandSource> context, ServerCommandFeedback feedback) throws CommandSyntaxException {
